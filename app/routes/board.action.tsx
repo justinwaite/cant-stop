@@ -1,29 +1,19 @@
-import type { ActionFunctionArgs } from "react-router";
-import { broadcastBoardState } from "./board.stream";
-import { promises as fs } from "fs";
-import path from "path";
-
-const stateFile = path.resolve(process.cwd(), "board-state.json");
-
-async function readBoardState() {
-  try {
-    const data = await fs.readFile(stateFile, "utf8");
-    return JSON.parse(data);
-  } catch {
-    return { pieces: {}, whitePieces: [], playerColors: {}, lockedColumns: [] };
-  }
-}
+import type { ActionFunctionArgs } from 'react-router';
+import { broadcastBoardState } from './board.stream';
+import { readBoardState } from '~/utils/board-state.server';
+import type { GameState, BoardActionRequest } from '~/types';
 
 export async function action({ request }: ActionFunctionArgs) {
-  if (request.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+  if (request.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 
   const { pieces, whitePieces, playerColors, lockedColumns } =
-    await request.json();
+    (await request.json()) as BoardActionRequest;
+
   // Defensive: always start from the latest state
   const prevState = await readBoardState();
   const newLocked = new Set(lockedColumns || prevState.lockedColumns || []);
@@ -52,10 +42,10 @@ export async function action({ request }: ActionFunctionArgs) {
     whitePieces,
     playerColors,
     lockedColumns: Array.from(newLocked),
-  };
+  } satisfies GameState;
   await broadcastBoardState(newState);
   return new Response(JSON.stringify({ ok: true }), {
     status: 200,
-    headers: { "Content-Type": "application/json" },
+    headers: { 'Content-Type': 'application/json' },
   });
 }

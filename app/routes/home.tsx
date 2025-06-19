@@ -1,10 +1,10 @@
-import type { Route } from "./+types/home";
-import { Board } from "../board";
+import type { Route } from './+types/home';
+import { Board } from '../board';
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "New React Router App" },
-    { name: "description", content: "Welcome to React Router!" },
+    { title: 'New React Router App' },
+    { name: 'description', content: 'Welcome to React Router!' },
   ];
 }
 

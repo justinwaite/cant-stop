@@ -1,5 +1,7 @@
-import React, { useState, useEffect, useRef } from "react";
-import "./app.css";
+import { useState, useEffect, useRef } from 'react';
+import './app.css';
+import type { BoardActionRequest } from './types';
+import {usePlayerSession} from "~/utils/use-player-session";
 
 // Number of slots per column for Can't Stop (columns 2-12)
 const columnSlots = [
@@ -22,12 +24,12 @@ const maxSlots = Math.max(...columnSlots);
 const boardHeight = maxSlots * (slotSize + slotGap) - slotGap;
 
 const playerColors = [
-  "#3490eb", // blue
-  "#e3342f", // red
-  "#38c172", // green
-  "#fbbf24", // yellow
-  "#a78bfa", // purple
-  "#f97316", // orange
+  '#3490eb', // blue
+  '#e3342f', // red
+  '#38c172', // green
+  '#fbbf24', // yellow
+  '#a78bfa', // purple
+  '#f97316', // orange
 ];
 
 // Helper to get a unique key for each slot
@@ -39,25 +41,20 @@ function slotKey(colIdx: number, slotIdx: number) {
 function setCookie(name: string, value: string, days = 365) {
   const expires = new Date(Date.now() + days * 864e5).toUTCString();
   document.cookie = `${name}=${encodeURIComponent(
-    value
+    value,
   )}; expires=${expires}; path=/`;
 }
-function getCookie(name: string) {
-  return document.cookie.split("; ").reduce((r, v) => {
-    const parts = v.split("=");
-    return parts[0] === name ? decodeURIComponent(parts[1]) : r;
-  }, "");
-}
 
-// Board state shape for sync
-interface BoardSyncState {
-  pieces: Record<string, string[]>; // slotKey -> array of playerColors
-  whitePieces: string[]; // white piece slot keys
-  playerColors: Record<string, string>; // playerId -> color
-  lockedColumns?: number[]; // locked column indices (0-based)
+function getCookie(name: string) {
+  return document.cookie.split('; ').reduce((r, v) => {
+    const parts = v.split('=');
+    return parts[0] === name ? decodeURIComponent(parts[1]) : r;
+  }, '');
 }
 
 export function Board() {
+  const {pid} = usePlayerSession();
+
   // Store placed pieces as a mapping slotKey -> array of colors
   const [pieces, setPieces] = useState<Record<string, string[]>>({});
   // Store placed white pieces as a set of slot keys
@@ -67,9 +64,7 @@ export function Board() {
   // Track if color has been loaded from cookie
   const [hasLoaded, setHasLoaded] = useState(false);
   // Track which piece type is being placed
-  const [pieceType, setPieceType] = useState<"color" | "white">("color");
-  // Player ID (ref so it doesn't trigger rerenders)
-  const playerIdRef = useRef<string | null>(null);
+  const [pieceType, setPieceType] = useState<'color' | 'white'>('color');
 
   // Real-time sync: prevent echo
   const isLocalChange = useRef(false);
@@ -84,31 +79,20 @@ export function Board() {
 
   // On mount, check for color and playerId cookies (client only)
   useEffect(() => {
-    if (typeof window === "undefined") return;
     // Color
-    const savedColor = getCookie("cantstop_color");
+    const savedColor = getCookie('cantstop_color');
     if (savedColor) setPlayerColor(savedColor);
     setHasLoaded(true);
-    // Player ID
-    let pid = getCookie("cantstop_pid");
-    if (!pid) {
-      pid =
-        window.crypto?.randomUUID?.() || Math.random().toString(36).slice(2);
-      setCookie("cantstop_pid", pid);
-    }
-    playerIdRef.current = pid;
   }, []);
 
   // When playerColor changes, save to cookie (client only)
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (playerColor) setCookie("cantstop_color", playerColor);
+    if (playerColor) setCookie('cantstop_color', playerColor);
   }, [playerColor]);
 
   // SSE: Listen for board state updates
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const evtSource = new EventSource("/board/stream");
+    const evtSource = new EventSource('/board/stream');
     evtSource.onmessage = (event) => {
       if (!event.data) return;
       try {
@@ -116,7 +100,7 @@ export function Board() {
         if (scrollRef.current) {
           scrollLeftRef.current = scrollRef.current.scrollLeft;
         }
-        const state: BoardSyncState = JSON.parse(event.data);
+        const state: BoardActionRequest = JSON.parse(event.data);
         if (state) {
           setPieces(state.pieces || {});
           setWhitePieces(new Set(state.whitePieces || []));
@@ -129,7 +113,6 @@ export function Board() {
 
   // Restore scroll position after board updates
   useEffect(() => {
-    if (typeof window === "undefined") return;
     if (scrollRef.current && scrollLeftRef.current > 0) {
       scrollRef.current.scrollLeft = scrollLeftRef.current;
     }
@@ -139,19 +122,19 @@ export function Board() {
   function syncBoardState(
     newPieces: Record<string, string[]>,
     newWhite: Set<string>,
-    newLocked: Set<number> = lockedColumns
+    newLocked: Set<number> = lockedColumns,
   ) {
-    if (typeof window === "undefined") return;
+    if (typeof window === 'undefined') return;
     isLocalChange.current = true;
-    fetch("/board/action", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+    fetch('/board/action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         pieces: newPieces,
         whitePieces: Array.from(newWhite),
         playerColors:
-          playerIdRef.current && playerColor
-            ? { [playerIdRef.current]: playerColor }
+          playerColor
+            ? { [pid]: playerColor }
             : {},
         lockedColumns: Array.from(newLocked),
       }),
@@ -163,10 +146,10 @@ export function Board() {
   }
 
   function handleSlotClick(colIdx: number, slotIdx: number) {
-    if (!playerColor && pieceType === "color") return;
+    if (!playerColor && pieceType === 'color') return;
     if (lockedColumns.has(colIdx)) return; // Prevent play in locked columns
     const key = slotKey(colIdx, slotIdx);
-    if (pieceType === "color") {
+    if (pieceType === 'color') {
       // Prevent multiple of the same player's color in a column
       for (let i = 0; i < columnSlots[colIdx]; ++i) {
         const k = slotKey(colIdx, i);
@@ -183,7 +166,7 @@ export function Board() {
       const isPlacingOnTop = slotIdx === 0 && idx === -1;
       if (isPlacingOnTop) {
         const confirmed = window.confirm(
-          "Are you sure you want to place your piece on the top row? This will lock the column and return all pieces in this column to their owners."
+          'Are you sure you want to place your piece on the top row? This will lock the column and return all pieces in this column to their owners.',
         );
         if (!confirmed) return;
       }
@@ -219,17 +202,17 @@ export function Board() {
   }
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === 'undefined') return;
     // Restore pieceType from localStorage on mount
-    const stored = localStorage.getItem("cantstop_pieceType");
-    if (stored === "color" || stored === "white") {
+    const stored = localStorage.getItem('cantstop_pieceType');
+    if (stored === 'color' || stored === 'white') {
       setPieceType(stored);
     }
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    localStorage.setItem("cantstop_pieceType", pieceType);
+    if (typeof window === 'undefined') return;
+    localStorage.setItem('cantstop_pieceType', pieceType);
   }, [pieceType]);
 
   return (
@@ -238,18 +221,18 @@ export function Board() {
       <button
         onClick={() => setPlayerColor(null)}
         style={{
-          position: "absolute",
+          position: 'absolute',
           top: 16,
           right: 24,
           zIndex: 101,
-          background: "#fff",
-          border: "2px solid #bbb",
+          background: '#fff',
+          border: '2px solid #bbb',
           borderRadius: 8,
-          padding: "8px 16px",
-          fontWeight: "bold",
-          cursor: "pointer",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-          color: "#222",
+          padding: '8px 16px',
+          fontWeight: 'bold',
+          cursor: 'pointer',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+          color: '#222',
         }}
       >
         Change Color
@@ -258,47 +241,47 @@ export function Board() {
       <div
         ref={scrollRef}
         style={{
-          position: "relative",
-          width: "100vw",
-          maxWidth: "100vw",
-          overflowX: "auto",
-          padding: "0 16px",
+          position: 'relative',
+          width: '100vw',
+          maxWidth: '100vw',
+          overflowX: 'auto',
+          padding: '0 16px',
         }}
       >
         {/* Color selection modal */}
         {hasLoaded && !playerColor && (
           <div
             style={{
-              position: "fixed",
+              position: 'fixed',
               top: 0,
               left: 0,
-              width: "100vw",
-              height: "100vh",
-              background: "rgba(0,0,0,0.5)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              width: '100vw',
+              height: '100vh',
+              background: 'rgba(0,0,0,0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               zIndex: 100,
             }}
           >
             <div
               style={{
-                background: "#fff",
+                background: '#fff',
                 padding: 32,
                 borderRadius: 16,
-                boxShadow: "0 4px 32px rgba(0,0,0,0.15)",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
+                boxShadow: '0 4px 32px rgba(0,0,0,0.15)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
                 gap: 24,
               }}
             >
               <div
-                style={{ fontWeight: "bold", fontSize: 20, marginBottom: 8 }}
+                style={{ fontWeight: 'bold', fontSize: 20, marginBottom: 8 }}
               >
                 Pick your color
               </div>
-              <div style={{ display: "flex", gap: 16 }}>
+              <div style={{ display: 'flex', gap: 16 }}>
                 {playerColors.map((color) => (
                   <button
                     key={color}
@@ -307,9 +290,9 @@ export function Board() {
                       width: 40,
                       height: 40,
                       background: color,
-                      border: "2px solid #bbb",
+                      border: '2px solid #bbb',
                       borderRadius: 8,
-                      cursor: "pointer",
+                      cursor: 'pointer',
                     }}
                     aria-label={`Pick color ${color}`}
                   />
@@ -320,14 +303,14 @@ export function Board() {
         )}
         <div
           style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "flex-start",
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'flex-start',
             gap: slotSize + slotGap, // horizontal gap matches vertical
             marginTop: 80,
             height: boardHeight,
             minWidth: 1100, // ensure board is wide enough for all columns
-            margin: "0 auto",
+            margin: '0 auto',
           }}
         >
           {columnSlots.map((slots, colIdx) => {
@@ -338,9 +321,9 @@ export function Board() {
               <div
                 key={colIdx}
                 style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
                   gap: slotGap,
                   marginTop,
                   marginBottom,
@@ -358,19 +341,19 @@ export function Board() {
                       style={{
                         width: slotSize,
                         height: slotSize,
-                        background: "#eee",
-                        border: "2px solid #bbb",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontWeight: isTop ? "bold" : undefined,
+                        background: '#eee',
+                        border: '2px solid #bbb',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: isTop ? 'bold' : undefined,
                         fontSize: isTop ? 18 : undefined,
-                        color: "#222",
+                        color: '#222',
                         cursor:
-                          playerColor || pieceType === "white"
-                            ? "pointer"
-                            : "not-allowed",
-                        position: "relative",
+                          playerColor || pieceType === 'white'
+                            ? 'pointer'
+                            : 'not-allowed',
+                        position: 'relative',
                       }}
                     >
                       {isTop ? colIdx + 2 : null}
@@ -379,7 +362,7 @@ export function Board() {
                           <div
                             key={color}
                             style={{
-                              position: "absolute",
+                              position: 'absolute',
                               top: 4 + i * 8,
                               left: 4,
                               width: 24,
@@ -393,13 +376,13 @@ export function Board() {
                       {hasWhite && (
                         <div
                           style={{
-                            position: "absolute",
+                            position: 'absolute',
                             top: 8,
                             left: 8,
                             width: slotSize - 16,
                             height: slotSize - 16,
-                            background: "#888",
-                            border: "2px solid #bbb",
+                            background: '#888',
+                            border: '2px solid #bbb',
                             borderRadius: 6,
                             zIndex: 2,
                           }}
@@ -408,15 +391,15 @@ export function Board() {
                       {lockedColumns.has(colIdx) && (
                         <div
                           style={{
-                            position: "absolute",
+                            position: 'absolute',
                             inset: 0,
-                            background: "rgba(128,128,128,0.4)",
+                            background: 'rgba(128,128,128,0.4)',
                             zIndex: 10,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
                             fontSize: 18,
-                            fontWeight: "bold",
+                            fontWeight: 'bold',
                           }}
                         >
                           🔒
@@ -433,48 +416,48 @@ export function Board() {
       {/* Piece type toggle and bust button - fixed to bottom */}
       <div
         style={{
-          position: "fixed",
+          position: 'fixed',
           left: 0,
           bottom: 0,
-          width: "100vw",
+          width: '100vw',
           zIndex: 100,
-          background: "rgba(255,255,255,0.95)",
-          boxShadow: "0 -2px 12px rgba(0,0,0,0.08)",
-          padding: "12px 0 20px 0",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
+          background: 'rgba(255,255,255,0.95)',
+          boxShadow: '0 -2px 12px rgba(0,0,0,0.08)',
+          padding: '12px 0 20px 0',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
           gap: 8,
         }}
       >
-        <div style={{ display: "flex", justifyContent: "center", gap: 8 }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 8 }}>
           <button
-            onClick={() => setPieceType("color")}
+            onClick={() => setPieceType('color')}
             style={{
-              padding: "6px 14px",
+              padding: '6px 14px',
               borderRadius: 8,
               border:
-                pieceType === "color" ? "2px solid #3490eb" : "2px solid #bbb",
-              background: pieceType === "color" ? "#e6f0fa" : "#fff",
-              fontWeight: pieceType === "color" ? "bold" : undefined,
-              cursor: "pointer",
-              color: "#222",
+                pieceType === 'color' ? '2px solid #3490eb' : '2px solid #bbb',
+              background: pieceType === 'color' ? '#e6f0fa' : '#fff',
+              fontWeight: pieceType === 'color' ? 'bold' : undefined,
+              cursor: 'pointer',
+              color: '#222',
               fontSize: 15,
             }}
           >
             My Color
           </button>
           <button
-            onClick={() => setPieceType("white")}
+            onClick={() => setPieceType('white')}
             style={{
-              padding: "6px 14px",
+              padding: '6px 14px',
               borderRadius: 8,
               border:
-                pieceType === "white" ? "2px solid #bbb" : "2px solid #eee",
-              background: pieceType === "white" ? "#f8f8f8" : "#fff",
-              fontWeight: pieceType === "white" ? "bold" : undefined,
-              cursor: "pointer",
-              color: "#222",
+                pieceType === 'white' ? '2px solid #bbb' : '2px solid #eee',
+              background: pieceType === 'white' ? '#f8f8f8' : '#fff',
+              fontWeight: pieceType === 'white' ? 'bold' : undefined,
+              cursor: 'pointer',
+              color: '#222',
               fontSize: 15,
             }}
           >
@@ -482,20 +465,20 @@ export function Board() {
           </button>
         </div>
         <div
-          style={{ display: "flex", justifyContent: "center", marginTop: 4 }}
+          style={{ display: 'flex', justifyContent: 'center', marginTop: 4 }}
         >
           <button
             onClick={() => syncBoardState(pieces, new Set())}
             style={{
-              padding: "6px 14px",
+              padding: '6px 14px',
               borderRadius: 8,
-              border: "2px solid #e3342f",
-              background: "#fff",
-              color: "#e3342f",
-              fontWeight: "bold",
-              cursor: "pointer",
+              border: '2px solid #e3342f',
+              background: '#fff',
+              color: '#e3342f',
+              fontWeight: 'bold',
+              cursor: 'pointer',
               fontSize: 15,
-              boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
             }}
           >
             Bust
