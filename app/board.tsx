@@ -155,6 +155,19 @@ export function Board() {
         }
       }
     }
+    // Guard: only allow placing a neutral piece above the player's colored piece in this column
+    let highestPlayerPiece = -1;
+    for (let i = 0; i < columnSlots[colIdx]; ++i) {
+      const k = slotKey(colIdx, i);
+      if (Array.isArray(pieces[k]) && pieces[k].includes(playerColor!)) {
+        highestPlayerPiece = i;
+        break; // colored pieces are always at the highest slot
+      }
+    }
+    if (highestPlayerPiece !== -1 && slotIdx >= highestPlayerPiece) {
+      // Can't place at or below your own colored piece
+      return;
+    }
     // Compute the next state, but do not update local state
     const next = new Set(whitePieces);
     if (next.has(key)) {
