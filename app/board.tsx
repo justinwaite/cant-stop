@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import './app.css';
 import type { BoardActionRequest } from './types';
-import {usePlayerSession} from "~/utils/use-player-session";
+import { usePlayerSession } from '~/utils/use-player-session';
 
 // Number of slots per column for Can't Stop (columns 2-12)
 const columnSlots = [
@@ -53,7 +53,7 @@ function getCookie(name: string) {
 }
 
 export function Board() {
-  const {pid} = usePlayerSession();
+  const { pid } = usePlayerSession();
 
   // Store placed pieces as a mapping slotKey -> array of colors
   const [pieces, setPieces] = useState<Record<string, string[]>>({});
@@ -63,8 +63,6 @@ export function Board() {
   const [playerColor, setPlayerColor] = useState<string | null>(null);
   // Track if color has been loaded from cookie
   const [hasLoaded, setHasLoaded] = useState(false);
-  // Track which piece type is being placed
-  const [pieceType, setPieceType] = useState<'color' | 'white'>('color');
 
   // Real-time sync: prevent echo
   const isLocalChange = useRef(false);
@@ -132,10 +130,7 @@ export function Board() {
       body: JSON.stringify({
         pieces: newPieces,
         whitePieces: Array.from(newWhite),
-        playerColors:
-          playerColor
-            ? { [pid]: playerColor }
-            : {},
+        playerColors: playerColor ? { [pid]: playerColor } : {},
         lockedColumns: Array.from(newLocked),
       }),
     }).finally(() => {
@@ -146,74 +141,30 @@ export function Board() {
   }
 
   function handleSlotClick(colIdx: number, slotIdx: number) {
-    if (!playerColor && pieceType === 'color') return;
+    if (!playerColor) return;
     if (lockedColumns.has(colIdx)) return; // Prevent play in locked columns
     const key = slotKey(colIdx, slotIdx);
-    if (pieceType === 'color') {
-      // Prevent multiple of the same player's color in a column
-      for (let i = 0; i < columnSlots[colIdx]; ++i) {
-        const k = slotKey(colIdx, i);
-        if (Array.isArray(pieces[k]) && pieces[k].includes(playerColor!)) {
-          // If this is the same slot, allow removal
-          if (!(k === key && pieces[k].includes(playerColor!))) {
-            return;
-          }
+    // Only allow neutral (white) piece placement
+    // Prevent multiple neutral pieces in the same column
+    for (let i = 0; i < columnSlots[colIdx]; ++i) {
+      const k = slotKey(colIdx, i);
+      if (whitePieces.has(k)) {
+        // If this is the same slot, allow removal
+        if (!(k === key && whitePieces.has(key))) {
+          return;
         }
       }
-      // If this is the top slot and the player is about to add their piece, confirm first
-      const arr = Array.isArray(pieces[key]) ? [...pieces[key]] : [];
-      const idx = arr.indexOf(playerColor!);
-      const isPlacingOnTop = slotIdx === 0 && idx === -1;
-      if (isPlacingOnTop) {
-        const confirmed = window.confirm(
-          'Are you sure you want to place your piece on the top row? This will lock the column and return all pieces in this column to their owners.',
-        );
-        if (!confirmed) return;
-      }
-      // Compute the next state, but do not update local state
-      const next = { ...pieces };
-      if (idx !== -1) {
-        arr.splice(idx, 1);
-      } else {
-        // Only allow 11 pieces for this player
-        const myCount = Object.values(next)
-          .flat()
-          .filter((c) => c === playerColor).length;
-        if (myCount >= 11) return;
-        arr.push(playerColor!);
-      }
-      if (arr.length > 0) {
-        next[key] = arr;
-      } else {
-        delete next[key];
-      }
-      syncBoardState(next, whitePieces);
+    }
+    // Compute the next state, but do not update local state
+    const next = new Set(whitePieces);
+    if (next.has(key)) {
+      next.delete(key);
     } else {
-      // Compute the next state, but do not update local state
-      const next = new Set(whitePieces);
-      if (next.has(key)) {
-        next.delete(key);
-      } else {
-        if (next.size >= 3) return; // Only 3 white pieces
-        next.add(key);
-      }
-      syncBoardState(pieces, next);
+      if (next.size >= 3) return; // Only 3 white pieces
+      next.add(key);
     }
+    syncBoardState(pieces, next);
   }
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    // Restore pieceType from localStorage on mount
-    const stored = localStorage.getItem('cantstop_pieceType');
-    if (stored === 'color' || stored === 'white') {
-      setPieceType(stored);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    localStorage.setItem('cantstop_pieceType', pieceType);
-  }, [pieceType]);
 
   return (
     <>
@@ -349,10 +300,7 @@ export function Board() {
                         fontWeight: isTop ? 'bold' : undefined,
                         fontSize: isTop ? 18 : undefined,
                         color: '#222',
-                        cursor:
-                          playerColor || pieceType === 'white'
-                            ? 'pointer'
-                            : 'not-allowed',
+                        cursor: playerColor ? 'pointer' : 'not-allowed',
                         position: 'relative',
                       }}
                     >
@@ -413,7 +361,7 @@ export function Board() {
           })}
         </div>
       </div>
-      {/* Piece type toggle and bust button - fixed to bottom */}
+      {/* Piece type toggle and bust/hold buttons - fixed to bottom */}
       <div
         style={{
           position: 'fixed',
@@ -430,42 +378,13 @@ export function Board() {
           gap: 8,
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 8 }}>
-          <button
-            onClick={() => setPieceType('color')}
-            style={{
-              padding: '6px 14px',
-              borderRadius: 8,
-              border:
-                pieceType === 'color' ? '2px solid #3490eb' : '2px solid #bbb',
-              background: pieceType === 'color' ? '#e6f0fa' : '#fff',
-              fontWeight: pieceType === 'color' ? 'bold' : undefined,
-              cursor: 'pointer',
-              color: '#222',
-              fontSize: 15,
-            }}
-          >
-            My Color
-          </button>
-          <button
-            onClick={() => setPieceType('white')}
-            style={{
-              padding: '6px 14px',
-              borderRadius: 8,
-              border:
-                pieceType === 'white' ? '2px solid #bbb' : '2px solid #eee',
-              background: pieceType === 'white' ? '#f8f8f8' : '#fff',
-              fontWeight: pieceType === 'white' ? 'bold' : undefined,
-              cursor: 'pointer',
-              color: '#222',
-              fontSize: 15,
-            }}
-          >
-            White
-          </button>
-        </div>
         <div
-          style={{ display: 'flex', justifyContent: 'center', marginTop: 4 }}
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            marginTop: 4,
+            gap: 8,
+          }}
         >
           <button
             onClick={() => syncBoardState(pieces, new Set())}
@@ -482,6 +401,51 @@ export function Board() {
             }}
           >
             Bust
+          </button>
+          <button
+            onClick={() => {
+              // HOLD LOGIC
+              if (!playerColor) return;
+              // Copy pieces and whitePieces
+              const newPieces: Record<string, string[]> = { ...pieces };
+              // For each white piece, remove player's colored piece from the column, then add to this slot
+              whitePieces.forEach((key) => {
+                const [colIdxStr, slotIdxStr] = key.split('-');
+                const colIdx = parseInt(colIdxStr, 10);
+                // Remove player's colored piece from this column
+                for (let i = 0; i < columnSlots[colIdx]; ++i) {
+                  const k = slotKey(colIdx, i);
+                  if (Array.isArray(newPieces[k])) {
+                    newPieces[k] = newPieces[k].filter(
+                      (c) => c !== playerColor,
+                    );
+                    if (newPieces[k].length === 0) delete newPieces[k];
+                  }
+                }
+                // Add player's colored piece to this slot
+                newPieces[key] = Array.isArray(newPieces[key])
+                  ? [
+                      ...newPieces[key].filter((c) => c !== playerColor),
+                      playerColor,
+                    ]
+                  : [playerColor];
+              });
+              // Clear all white pieces
+              syncBoardState(newPieces, new Set());
+            }}
+            style={{
+              padding: '6px 14px',
+              borderRadius: 8,
+              border: '2px solid #38c172',
+              background: '#fff',
+              color: '#38c172',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              fontSize: 15,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+            }}
+          >
+            Hold
           </button>
         </div>
       </div>
