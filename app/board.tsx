@@ -248,7 +248,10 @@ export function Board() {
       >
         {/* Color selection modal */}
         {hasLoadedInitialData && !playerColor && (
-          <ColorPicker onSelectColor={selectColor} />
+          <ColorPicker
+            onSelectColor={selectColor}
+            takenColors={Object.values(playerColorsState)}
+          />
         )}
         <div
           style={{
