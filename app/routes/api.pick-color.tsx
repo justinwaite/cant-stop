@@ -21,11 +21,27 @@ export async function action({ request }: ActionFunctionArgs) {
     });
   }
 
-  const { color, name, gameId } = await request.json();
+  const { color, name, gameId, removePlayerId } = await request.json();
 
   if (!gameId || !isValidGameCode(gameId)) {
     return new Response(JSON.stringify({ error: 'Invalid game code' }), {
       status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  // Remove player logic (handle this before color validation)
+  if (removePlayerId) {
+    const currentState = await readBoardState(gameId);
+    const newPlayers = { ...currentState.players };
+    delete newPlayers[removePlayerId];
+    const newState: GameState = {
+      ...currentState,
+      players: newPlayers,
+    };
+    await broadcastBoardState(gameId, newState);
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
   }

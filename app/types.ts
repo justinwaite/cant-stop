@@ -5,6 +5,8 @@ export type GameState = {
   lockedColumns: Record<number, string>; // columnIndex -> playerId who locked it
   lastRoll?: number[] | null; // last dice roll (4 dice)
   started?: boolean; // whether the game has started
+  playerOrder?: string[]; // array of playerIds in turn order
+  turnIndex?: number; // index into playerOrder for whose turn it is
 };
 
 export type BoardActionRequest = {
@@ -14,4 +16,6 @@ export type BoardActionRequest = {
   lockedColumns?: Record<number, string>; // columnIndex -> playerId who locked it
   lastRoll?: number[] | null; // last dice roll (4 dice)
   started?: boolean; // whether the game has started
+  playerOrder?: string[];
+  turnIndex?: number;
 };

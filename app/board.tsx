@@ -80,6 +80,10 @@ export function Board() {
   const [started, setStarted] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  // Track player order
+  const [playerOrder, setPlayerOrder] = useState<string[]>([]);
+  const [turnIndex, setTurnIndex] = useState<number>(0);
+
   // Helper function to get color from player ID
   function getColorFromPlayerId(playerId: string): string {
     return players[playerId]?.color || '#ccc'; // fallback color
@@ -109,6 +113,10 @@ export function Board() {
           setLastRoll(state.lastRoll ?? null);
           setStarted(!!state.started);
           setHasLoadedInitialData(true);
+          setPlayerOrder(state.playerOrder || []);
+          setTurnIndex(
+            typeof state.turnIndex === 'number' ? state.turnIndex : 0,
+          );
         }
       } catch {}
     };
@@ -150,6 +158,7 @@ export function Board() {
 
   function handleSlotClick(colIdx: number, slotIdx: number) {
     if (!playerColor) return;
+    if (!isMyTurn) return;
     if (lockedColumns[colIdx]) return; // Prevent play in locked columns
     const key = slotKey(colIdx, slotIdx);
     // Only allow neutral (white) piece placement
@@ -187,9 +196,28 @@ export function Board() {
     syncBoardState(pieces, next);
   }
 
-  // Action handlers
-  function handleBust() {
-    syncBoardState(pieces, new Set(), {});
+  // Move to next turn
+  async function nextTurn(
+    nextPieces: Record<string, string[]>,
+    nextWhitePieces: Set<string>,
+    nextLockedColumns: Record<number, string> = lockedColumns,
+  ) {
+    if (!gameId) return;
+    const nextIndex =
+      playerOrder.length > 0 ? (turnIndex + 1) % playerOrder.length : 0;
+    await fetch(`/game/${gameId}/action`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        pieces: nextPieces,
+        whitePieces: Array.from(nextWhitePieces),
+        lockedColumns: nextLockedColumns,
+        turnIndex: nextIndex,
+        players,
+        playerOrder,
+        started,
+      }),
+    });
   }
 
   function handleHold() {
@@ -213,8 +241,8 @@ export function Board() {
         ? [...newPieces[key].filter((c) => c !== pid), pid]
         : [pid];
     });
-    // Clear all white pieces
-    syncBoardState(newPieces, new Set());
+    // Instead of two calls, just call nextTurn with the new state:
+    nextTurn(newPieces, new Set(), lockedColumns);
   }
 
   function handleChangeColor() {
@@ -233,6 +261,8 @@ export function Board() {
 
   async function handleStartGame() {
     if (!gameId) return;
+    // Randomize player order
+    const order = Object.keys(players).sort(() => Math.random() - 0.5);
     await fetch(`/game/${gameId}/action`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -242,8 +272,24 @@ export function Board() {
         whitePieces: Array.from(whitePieces),
         players,
         lockedColumns,
+        playerOrder: order,
+        turnIndex: 0,
       }),
     });
+  }
+
+  async function handleRemovePlayer(playerId: string) {
+    if (!gameId) return;
+    if (!window.confirm('Remove this player from the game?')) return;
+    await fetch('/api/pick-color', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ removePlayerId: playerId, gameId }),
+    });
+  }
+
+  function handleBust() {
+    nextTurn(pieces, new Set(), {});
   }
 
   if (!gameId) {
@@ -281,11 +327,11 @@ export function Board() {
           <div className="mb-4 w-full">
             <div className="font-semibold mb-2 text-lg">Players</div>
             <ul className="w-full">
-              {Object.values(players).length === 0 && (
+              {Object.entries(players).length === 0 && (
                 <li className="text-gray-500 text-center">No players yet</li>
               )}
-              {Object.values(players).map((player, i) => (
-                <li key={i} className="flex items-center gap-3 mb-2">
+              {Object.entries(players).map(([playerId, player]) => (
+                <li key={playerId} className="flex items-center gap-3 mb-2">
                   <span
                     style={{
                       display: 'inline-block',
@@ -299,6 +345,16 @@ export function Board() {
                   <span className="font-mono text-lg text-gray-800 dark:text-gray-100">
                     {player.name}
                   </span>
+                  {playerId !== pid && (
+                    <button
+                      onClick={() => handleRemovePlayer(playerId)}
+                      className="ml-2 px-2 py-1 rounded bg-red-500 text-white text-xs font-bold hover:bg-red-700 transition-colors"
+                      disabled={started}
+                      type="button"
+                    >
+                      Remove
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>
@@ -328,6 +384,10 @@ export function Board() {
     );
   }
 
+  // Get current player's ID for turn
+  const currentTurnPlayerId = playerOrder[turnIndex];
+  const isMyTurn = pid === currentTurnPlayerId;
+
   return (
     <>
       {/* Menu */}
@@ -352,7 +412,8 @@ export function Board() {
           width: '100vw',
           maxWidth: '100vw',
           overflowX: 'auto',
-          padding: '48px 16px 0 16px',
+          overflowY: 'auto',
+          padding: '82px 16px 160px 16px',
         }}
       >
         <div
@@ -460,14 +521,36 @@ export function Board() {
         </div>
       </div>
 
+      {/* Turn indicator (top right) */}
+      {started && playerOrder.length > 0 && (
+        <div className="fixed top-4 right-4 z-40 flex items-center gap-2 px-3 py-1 rounded-lg bg-white/90 dark:bg-gray-900/90 border border-gray-300 dark:border-gray-700 shadow">
+          <span
+            style={{
+              display: 'inline-block',
+              width: 18,
+              height: 18,
+              borderRadius: 6,
+              background: players[currentTurnPlayerId]?.color,
+              border: '2px solid #bbb',
+            }}
+          />
+          <span className="font-mono text-base text-gray-800 dark:text-gray-100 font-bold">
+            {players[currentTurnPlayerId]?.name || '...'}
+          </span>
+          <span className="text-xs text-blue-700 dark:text-blue-300 font-semibold ml-1">
+            TURN
+          </span>
+        </div>
+      )}
+
       {/* Action Bar */}
       <ActionBar
         playerColor={playerColor}
         pieces={pieces}
         whitePieces={whitePieces}
-        onBust={handleBust}
-        onHold={handleHold}
-        onRollDice={handleRollDice}
+        onBust={isMyTurn ? handleBust : undefined}
+        onHold={isMyTurn ? handleHold : undefined}
+        onRollDice={isMyTurn ? handleRollDice : undefined}
       />
     </>
   );

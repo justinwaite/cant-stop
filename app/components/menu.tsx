@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
+import { usePlayerSession } from '~/utils/use-player-session';
 
 interface MenuProps {
   onChangeColor: () => void;
@@ -12,6 +13,17 @@ export function Menu({ onChangeColor, gameId, players }: MenuProps) {
   const [copied, setCopied] = useState(false);
   const [showPlayers, setShowPlayers] = useState(false);
   const navigate = useNavigate();
+  const { pid } = usePlayerSession();
+
+  async function handleRemovePlayer(playerId: string) {
+    if (!gameId) return;
+    if (!window.confirm('Remove this player from the game?')) return;
+    await fetch('/api/pick-color', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ removePlayerId: playerId, gameId }),
+    });
+  }
 
   function handleCopyGameUrl() {
     const gameUrl = `${window.location.origin}/game/${gameId}`;
@@ -157,16 +169,19 @@ export function Menu({ onChangeColor, gameId, players }: MenuProps) {
             onClick={() => setShowPlayers(false)}
           />
           <div
-            className="fixed top-1/2 left-1/2 z-50 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-300 dark:border-gray-700 p-6 min-w-[260px] min-h-[120px] flex flex-col items-center"
+            className="fixed top-1/2 left-1/2 z-50 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-300 dark:border-gray-700 p-6 min-w-[260px] min-h-[120px] flex flex-col items-center max-w-sm w-full"
             style={{ transform: 'translate(-50%, -50%)' }}
           >
             <div className="font-bold text-lg mb-4">Players</div>
             <ul className="w-full">
-              {Object.values(players).length === 0 && (
+              {Object.entries(players).length === 0 && (
                 <li className="text-gray-500 text-center">No players yet</li>
               )}
-              {Object.values(players).map((player, i) => (
-                <li key={i} className="flex items-center gap-3 mb-2">
+              {Object.entries(players).map(([playerId, player]) => (
+                <li
+                  key={playerId}
+                  className="flex items-center gap-3 mb-2 justify-between"
+                >
                   <span
                     style={{
                       display: 'inline-block',
@@ -177,9 +192,18 @@ export function Menu({ onChangeColor, gameId, players }: MenuProps) {
                       border: '2px solid #bbb',
                     }}
                   />
-                  <span className="font-mono text-base text-gray-800 dark:text-gray-100">
+                  <span className="font-mono text-base text-gray-800 dark:text-gray-100 flex-1 ml-2">
                     {player.name}
                   </span>
+                  {playerId !== pid && (
+                    <button
+                      onClick={() => handleRemovePlayer(playerId)}
+                      className="px-2 py-1 rounded bg-red-500 text-white text-xs font-bold hover:bg-red-700 transition-colors ml-auto"
+                      type="button"
+                    >
+                      Remove
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>

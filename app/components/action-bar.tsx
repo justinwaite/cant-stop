@@ -4,9 +4,9 @@ interface ActionBarProps {
   playerColor: string | null;
   pieces: Record<string, string[]>;
   whitePieces: Set<string>;
-  onBust: () => void;
-  onHold: () => void;
-  onRollDice: () => void;
+  onBust?: () => void;
+  onHold?: () => void;
+  onRollDice?: () => void;
 }
 
 export function ActionBar({
@@ -22,13 +22,14 @@ export function ActionBar({
       <div className="flex justify-center mt-1 gap-2">
         <button
           onClick={onBust}
+          disabled={!onBust}
           className="px-3.5 py-1.5 rounded-lg border-2 border-red-500 bg-white dark:bg-gray-800 text-red-500 dark:text-red-400 font-bold cursor-pointer text-sm shadow-md dark:shadow-black/10 hover:bg-red-50 dark:hover:bg-gray-700 transition-colors"
         >
           Bust
         </button>
         <button
           onClick={onHold}
-          disabled={!playerColor}
+          disabled={!playerColor || !onHold}
           className={`px-3.5 py-1.5 rounded-lg border-2 font-bold text-sm shadow-md transition-colors ${
             playerColor
               ? 'border-green-500 bg-white dark:bg-gray-800 text-green-500 dark:text-green-400 cursor-pointer hover:bg-green-50 dark:hover:bg-gray-700'
@@ -39,6 +40,7 @@ export function ActionBar({
         </button>
         <button
           onClick={onRollDice}
+          disabled={!onRollDice}
           className="px-3.5 py-1.5 rounded-lg border-2 border-blue-500 bg-white dark:bg-gray-800 text-blue-500 dark:text-blue-400 font-bold cursor-pointer text-sm shadow-md dark:shadow-black/10 hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
         >
           <svg
