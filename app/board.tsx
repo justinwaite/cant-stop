@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import './app.css';
 import type { BoardActionRequest } from './types';
 import { usePlayerSession } from '~/utils/use-player-session';
+import { ActionBar } from './components/action-bar';
+import { ColorPicker } from './components/color-picker';
+import { Menu } from './components/menu';
 
 // Number of slots per column for Can't Stop (columns 2-12)
 const columnSlots = [
@@ -174,28 +177,45 @@ export function Board() {
     syncBoardState(pieces, next);
   }
 
+  // Action handlers
+  function handleBust() {
+    syncBoardState(pieces, new Set(), {});
+  }
+
+  function handleHold() {
+    if (!playerColor) return;
+    // Copy pieces and whitePieces
+    const newPieces: Record<string, string[]> = { ...pieces };
+    // For each white piece, remove player's colored piece from the column, then add to this slot
+    whitePieces.forEach((key) => {
+      const [colIdxStr, slotIdxStr] = key.split('-');
+      const colIdx = parseInt(colIdxStr, 10);
+      // Remove player's colored piece from this column
+      for (let i = 0; i < columnSlots[colIdx]; ++i) {
+        const k = slotKey(colIdx, i);
+        if (Array.isArray(newPieces[k])) {
+          newPieces[k] = newPieces[k].filter((c) => c !== pid);
+          if (newPieces[k].length === 0) delete newPieces[k];
+        }
+      }
+      // Add player's colored piece to this slot
+      newPieces[key] = Array.isArray(newPieces[key])
+        ? [...newPieces[key].filter((c) => c !== pid), pid]
+        : [pid];
+    });
+    // Clear all white pieces
+    syncBoardState(newPieces, new Set());
+  }
+
+  function handleChangeColor() {
+    selectColor('');
+  }
+
   return (
     <>
-      {/* Change color button */}
-      <button
-        onClick={() => selectColor('')}
-        style={{
-          position: 'absolute',
-          top: 16,
-          right: 24,
-          zIndex: 101,
-          background: '#fff',
-          border: '2px solid #bbb',
-          borderRadius: 8,
-          padding: '8px 16px',
-          fontWeight: 'bold',
-          cursor: 'pointer',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-          color: '#222',
-        }}
-      >
-        Change Color
-      </button>
+      {/* Menu */}
+      <Menu onChangeColor={handleChangeColor} />
+
       {/* Board scroll area */}
       <div
         ref={scrollRef}
@@ -209,56 +229,7 @@ export function Board() {
       >
         {/* Color selection modal */}
         {hasLoadedInitialData && !playerColor && (
-          <div
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              width: '100vw',
-              height: '100vh',
-              background: 'rgba(0,0,0,0.5)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 100,
-            }}
-          >
-            <div
-              style={{
-                background: '#fff',
-                padding: 32,
-                borderRadius: 16,
-                boxShadow: '0 4px 32px rgba(0,0,0,0.15)',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 24,
-              }}
-            >
-              <div
-                style={{ fontWeight: 'bold', fontSize: 20, marginBottom: 8 }}
-              >
-                Pick your color
-              </div>
-              <div style={{ display: 'flex', gap: 16 }}>
-                {playerColors.map((color) => (
-                  <button
-                    key={color}
-                    onClick={() => selectColor(color)}
-                    style={{
-                      width: 40,
-                      height: 40,
-                      background: color,
-                      border: '2px solid #bbb',
-                      borderRadius: 8,
-                      cursor: 'pointer',
-                    }}
-                    aria-label={`Pick color ${color}`}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
+          <ColorPicker onSelectColor={selectColor} />
         )}
         <div
           style={{
@@ -364,89 +335,15 @@ export function Board() {
           })}
         </div>
       </div>
-      {/* Piece type toggle and bust/hold buttons - fixed to bottom */}
-      <div
-        style={{
-          position: 'fixed',
-          left: 0,
-          bottom: 0,
-          width: '100vw',
-          zIndex: 100,
-          background: 'rgba(255,255,255,0.95)',
-          boxShadow: '0 -2px 12px rgba(0,0,0,0.08)',
-          padding: '12px 0 20px 0',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 8,
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            marginTop: 4,
-            gap: 8,
-          }}
-        >
-          <button
-            onClick={() => syncBoardState(pieces, new Set(), {})}
-            style={{
-              padding: '6px 14px',
-              borderRadius: 8,
-              border: '2px solid #e3342f',
-              background: '#fff',
-              color: '#e3342f',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              fontSize: 15,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-            }}
-          >
-            Bust
-          </button>
-          <button
-            onClick={() => {
-              // HOLD LOGIC
-              if (!playerColor) return;
-              // Copy pieces and whitePieces
-              const newPieces: Record<string, string[]> = { ...pieces };
-              // For each white piece, remove player's colored piece from the column, then add to this slot
-              whitePieces.forEach((key) => {
-                const [colIdxStr, slotIdxStr] = key.split('-');
-                const colIdx = parseInt(colIdxStr, 10);
-                // Remove player's colored piece from this column
-                for (let i = 0; i < columnSlots[colIdx]; ++i) {
-                  const k = slotKey(colIdx, i);
-                  if (Array.isArray(newPieces[k])) {
-                    newPieces[k] = newPieces[k].filter((c) => c !== pid);
-                    if (newPieces[k].length === 0) delete newPieces[k];
-                  }
-                }
-                // Add player's colored piece to this slot
-                newPieces[key] = Array.isArray(newPieces[key])
-                  ? [...newPieces[key].filter((c) => c !== pid), pid]
-                  : [pid];
-              });
-              // Clear all white pieces
-              syncBoardState(newPieces, new Set());
-            }}
-            style={{
-              padding: '6px 14px',
-              borderRadius: 8,
-              border: '2px solid #38c172',
-              background: '#fff',
-              color: '#38c172',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              fontSize: 15,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-            }}
-          >
-            Hold
-          </button>
-        </div>
-      </div>
+
+      {/* Action Bar */}
+      <ActionBar
+        playerColor={playerColor}
+        pieces={pieces}
+        whitePieces={whitePieces}
+        onBust={handleBust}
+        onHold={handleHold}
+      />
     </>
   );
 }
