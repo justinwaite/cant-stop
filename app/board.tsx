@@ -24,12 +24,12 @@ const maxSlots = Math.max(...columnSlots);
 const boardHeight = maxSlots * (slotSize + slotGap) - slotGap;
 
 const playerColors = [
-  '#3490eb', // blue
-  '#e3342f', // red
-  '#38c172', // green
+  '#2563eb', // blue
+  '#dc2626', // red
+  '#16a34a', // green
   '#fbbf24', // yellow
-  '#a78bfa', // purple
-  '#f97316', // orange
+  '#9333ea', // purple
+  '#ea580c', // orange
 ];
 
 // Helper to get a unique key for each slot
@@ -37,56 +37,40 @@ function slotKey(colIdx: number, slotIdx: number) {
   return `${colIdx}-${slotIdx}`;
 }
 
-// Cookie helpers
-function setCookie(name: string, value: string, days = 365) {
-  const expires = new Date(Date.now() + days * 864e5).toUTCString();
-  document.cookie = `${name}=${encodeURIComponent(
-    value,
-  )}; expires=${expires}; path=/`;
-}
-
-function getCookie(name: string) {
-  return document.cookie.split('; ').reduce((r, v) => {
-    const parts = v.split('=');
-    return parts[0] === name ? decodeURIComponent(parts[1]) : r;
-  }, '');
-}
-
 export function Board() {
   const { pid } = usePlayerSession();
 
-  // Store placed pieces as a mapping slotKey -> array of colors
+  // Store placed pieces as a mapping slotKey -> array of playerIds
   const [pieces, setPieces] = useState<Record<string, string[]>>({});
   // Store placed white pieces as a set of slot keys
   const [whitePieces, setWhitePieces] = useState<Set<string>>(new Set());
-  // Store the selected player color
-  const [playerColor, setPlayerColor] = useState<string | null>(null);
-  // Track if color has been loaded from cookie
-  const [hasLoaded, setHasLoaded] = useState(false);
+  // Store player colors from game state
+  const [playerColorsState, setPlayerColorsState] = useState<
+    Record<string, string>
+  >({});
+  // Track if initial data has been loaded from SSE
+  const [hasLoadedInitialData, setHasLoadedInitialData] = useState(false);
 
   // Real-time sync: prevent echo
   const isLocalChange = useRef(false);
 
   // Track locked columns
-  const [lockedColumns, setLockedColumns] = useState<Set<number>>(new Set());
+  const [lockedColumns, setLockedColumns] = useState<Record<number, string>>(
+    {},
+  );
 
   // Ref for the scroll container
   const scrollRef = useRef<HTMLDivElement>(null);
   // Store scrollLeft before update
   const scrollLeftRef = useRef<number>(0);
 
-  // On mount, check for color and playerId cookies (client only)
-  useEffect(() => {
-    // Color
-    const savedColor = getCookie('cantstop_color');
-    if (savedColor) setPlayerColor(savedColor);
-    setHasLoaded(true);
-  }, []);
+  // Get current player's color from game state
+  const playerColor = playerColorsState[pid] || null;
 
-  // When playerColor changes, save to cookie (client only)
-  useEffect(() => {
-    if (playerColor) setCookie('cantstop_color', playerColor);
-  }, [playerColor]);
+  // Helper function to get color from player ID
+  function getColorFromPlayerId(playerId: string): string {
+    return playerColorsState[playerId] || '#ccc'; // fallback color
+  }
 
   // SSE: Listen for board state updates
   useEffect(() => {
@@ -102,7 +86,9 @@ export function Board() {
         if (state) {
           setPieces(state.pieces || {});
           setWhitePieces(new Set(state.whitePieces || []));
-          setLockedColumns(new Set(state.lockedColumns || []));
+          setLockedColumns(state.lockedColumns || {});
+          setPlayerColorsState(state.playerColors || {});
+          setHasLoadedInitialData(true);
         }
       } catch {}
     };
@@ -120,7 +106,7 @@ export function Board() {
   function syncBoardState(
     newPieces: Record<string, string[]>,
     newWhite: Set<string>,
-    newLocked: Set<number> = lockedColumns,
+    newLocked: Record<number, string> = lockedColumns,
   ) {
     if (typeof window === 'undefined') return;
     isLocalChange.current = true;
@@ -130,8 +116,8 @@ export function Board() {
       body: JSON.stringify({
         pieces: newPieces,
         whitePieces: Array.from(newWhite),
-        playerColors: playerColor ? { [pid]: playerColor } : {},
-        lockedColumns: Array.from(newLocked),
+        playerColors: {}, // Player colors are handled separately
+        lockedColumns: newLocked,
       }),
     }).finally(() => {
       setTimeout(() => {
@@ -140,9 +126,18 @@ export function Board() {
     });
   }
 
+  // Function to select a color
+  function selectColor(color: string) {
+    fetch('/api/pick-color', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ color }),
+    });
+  }
+
   function handleSlotClick(colIdx: number, slotIdx: number) {
     if (!playerColor) return;
-    if (lockedColumns.has(colIdx)) return; // Prevent play in locked columns
+    if (lockedColumns[colIdx]) return; // Prevent play in locked columns
     const key = slotKey(colIdx, slotIdx);
     // Only allow neutral (white) piece placement
     // Prevent multiple neutral pieces in the same column
@@ -159,7 +154,7 @@ export function Board() {
     let highestPlayerPiece = -1;
     for (let i = 0; i < columnSlots[colIdx]; ++i) {
       const k = slotKey(colIdx, i);
-      if (Array.isArray(pieces[k]) && pieces[k].includes(playerColor!)) {
+      if (Array.isArray(pieces[k]) && pieces[k].includes(pid)) {
         highestPlayerPiece = i;
         break; // colored pieces are always at the highest slot
       }
@@ -183,7 +178,7 @@ export function Board() {
     <>
       {/* Change color button */}
       <button
-        onClick={() => setPlayerColor(null)}
+        onClick={() => selectColor('')}
         style={{
           position: 'absolute',
           top: 16,
@@ -213,7 +208,7 @@ export function Board() {
         }}
       >
         {/* Color selection modal */}
-        {hasLoaded && !playerColor && (
+        {hasLoadedInitialData && !playerColor && (
           <div
             style={{
               position: 'fixed',
@@ -249,7 +244,7 @@ export function Board() {
                 {playerColors.map((color) => (
                   <button
                     key={color}
-                    onClick={() => setPlayerColor(color)}
+                    onClick={() => selectColor(color)}
                     style={{
                       width: 40,
                       height: 40,
@@ -319,16 +314,16 @@ export function Board() {
                     >
                       {isTop ? colIdx + 2 : null}
                       {Array.isArray(hasPiece) &&
-                        hasPiece.map((color, i) => (
+                        hasPiece.map((playerId, i) => (
                           <div
-                            key={color}
+                            key={playerId}
                             style={{
                               position: 'absolute',
                               top: 4 + i * 8,
                               left: 4,
                               width: 24,
                               height: 24,
-                              background: color,
+                              background: getColorFromPlayerId(playerId),
                               borderRadius: 6,
                               zIndex: 1,
                             }}
@@ -349,22 +344,17 @@ export function Board() {
                           }}
                         />
                       )}
-                      {lockedColumns.has(colIdx) && (
+                      {lockedColumns[colIdx] && (
                         <div
                           style={{
                             position: 'absolute',
                             inset: 0,
-                            background: 'rgba(128,128,128,0.4)',
+                            background: getColorFromPlayerId(
+                              lockedColumns[colIdx],
+                            ),
                             zIndex: 10,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: 18,
-                            fontWeight: 'bold',
                           }}
-                        >
-                          🔒
-                        </div>
+                        />
                       )}
                     </div>
                   );
@@ -400,7 +390,7 @@ export function Board() {
           }}
         >
           <button
-            onClick={() => syncBoardState(pieces, new Set())}
+            onClick={() => syncBoardState(pieces, new Set(), {})}
             style={{
               padding: '6px 14px',
               borderRadius: 8,
@@ -429,19 +419,14 @@ export function Board() {
                 for (let i = 0; i < columnSlots[colIdx]; ++i) {
                   const k = slotKey(colIdx, i);
                   if (Array.isArray(newPieces[k])) {
-                    newPieces[k] = newPieces[k].filter(
-                      (c) => c !== playerColor,
-                    );
+                    newPieces[k] = newPieces[k].filter((c) => c !== pid);
                     if (newPieces[k].length === 0) delete newPieces[k];
                   }
                 }
                 // Add player's colored piece to this slot
                 newPieces[key] = Array.isArray(newPieces[key])
-                  ? [
-                      ...newPieces[key].filter((c) => c !== playerColor),
-                      playerColor,
-                    ]
-                  : [playerColor];
+                  ? [...newPieces[key].filter((c) => c !== pid), pid]
+                  : [pid];
               });
               // Clear all white pieces
               syncBoardState(newPieces, new Set());

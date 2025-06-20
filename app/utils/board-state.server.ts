@@ -13,7 +13,7 @@ export async function readBoardState(): Promise<GameState> {
       pieces: {},
       whitePieces: [],
       playerColors: {},
-      lockedColumns: [],
+      lockedColumns: {},
     };
   }
 }

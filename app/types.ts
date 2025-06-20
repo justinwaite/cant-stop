@@ -1,13 +1,13 @@
 export type GameState = {
-  pieces: Record<string, Array<string>>;
+  pieces: Record<string, Array<string>>; // slotKey -> array of playerIds
   whitePieces: Array<string>;
-  playerColors: Record<string, string>;
-  lockedColumns: Array<number>;
+  playerColors: Record<string, string>; // playerId -> color
+  lockedColumns: Record<number, string>; // columnIndex -> playerId who locked it
 };
 
 export type BoardActionRequest = {
-  pieces: Record<string, string[]>; // slotKey -> array of playerColors
+  pieces: Record<string, string[]>; // slotKey -> array of playerIds
   whitePieces: string[]; // white piece slot keys
   playerColors: Record<string, string>; // playerId -> color
-  lockedColumns?: number[]; // locked column indices (0-based)
+  lockedColumns?: Record<number, string>; // columnIndex -> playerId who locked it
 };
