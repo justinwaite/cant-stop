@@ -4,6 +4,7 @@ export type GameState = {
   players: Record<string, { color: string; name: string }>; // playerId -> { color, name }
   lockedColumns: Record<number, string>; // columnIndex -> playerId who locked it
   lastRoll?: number[] | null; // last dice roll (4 dice)
+  started?: boolean; // whether the game has started
 };
 
 export type BoardActionRequest = {
@@ -12,4 +13,5 @@ export type BoardActionRequest = {
   players: Record<string, { color: string; name: string }>; // playerId -> { color, name }
   lockedColumns?: Record<number, string>; // columnIndex -> playerId who locked it
   lastRoll?: number[] | null; // last dice roll (4 dice)
+  started?: boolean; // whether the game has started
 };

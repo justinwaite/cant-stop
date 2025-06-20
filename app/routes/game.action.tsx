@@ -51,7 +51,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
   }
 
   // Otherwise, handle as a board update
-  const { pieces, whitePieces, players, lockedColumns } =
+  const { pieces, whitePieces, players, lockedColumns, started } =
     reqBody as BoardActionRequest;
 
   // Defensive: always start from the latest state
@@ -90,6 +90,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
     players: mergedPlayers,
     lockedColumns: newLocked,
     lastRoll: prevState.lastRoll,
+    started: typeof started === 'boolean' ? started : prevState.started,
   } satisfies GameState;
 
   await broadcastBoardState(gameId, newState);

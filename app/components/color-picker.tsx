@@ -9,7 +9,6 @@ const playerColors = [
   '#16a34a', // green
   '#fbbf24', // yellow
   '#9333ea', // purple
-  '#ea580c', // orange
 ];
 
 import { useState } from 'react';
@@ -35,6 +34,8 @@ export function ColorPicker({ onSelect, takenColors = [] }: ColorPickerProps) {
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 100,
+        paddingLeft: 16,
+        paddingRight: 16,
       }}
     >
       <div
@@ -47,6 +48,10 @@ export function ColorPicker({ onSelect, takenColors = [] }: ColorPickerProps) {
           flexDirection: 'column',
           alignItems: 'center',
           gap: 24,
+          width: '100%',
+          maxWidth: 340,
+          marginLeft: 'auto',
+          marginRight: 'auto',
         }}
       >
         <div style={{ fontWeight: 'bold', fontSize: 20, marginBottom: 8 }}>
@@ -70,7 +75,15 @@ export function ColorPicker({ onSelect, takenColors = [] }: ColorPickerProps) {
           maxLength={20}
           className="dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400"
         />
-        <div style={{ display: 'flex', gap: 16, marginBottom: 12 }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: 16,
+            marginBottom: 12,
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+          }}
+        >
           {playerColors.map((color) => {
             const taken = takenColors.includes(color);
             return (

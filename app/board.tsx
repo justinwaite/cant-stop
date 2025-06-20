@@ -76,9 +76,21 @@ export function Board() {
   // Get current player's color from game state
   const playerColor = players[pid]?.color || null;
 
+  // Track game started status
+  const [started, setStarted] = useState(false);
+  const [copied, setCopied] = useState(false);
+
   // Helper function to get color from player ID
   function getColorFromPlayerId(playerId: string): string {
     return players[playerId]?.color || '#ccc'; // fallback color
+  }
+
+  function handleCopy(gameUrl: string) {
+    if (!gameUrl) return;
+    navigator.clipboard.writeText(gameUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
   }
 
   // SSE: Listen for board state updates
@@ -95,6 +107,7 @@ export function Board() {
           setLockedColumns(state.lockedColumns || {});
           setPlayers(state.players || {});
           setLastRoll(state.lastRoll ?? null);
+          setStarted(!!state.started);
           setHasLoadedInitialData(true);
         }
       } catch {}
@@ -218,8 +231,101 @@ export function Board() {
     });
   }
 
+  async function handleStartGame() {
+    if (!gameId) return;
+    await fetch(`/game/${gameId}/action`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        started: true,
+        pieces,
+        whitePieces: Array.from(whitePieces),
+        players,
+        lockedColumns,
+      }),
+    });
+  }
+
   if (!gameId) {
     return <div>Loading...</div>;
+  }
+
+  // LOBBY: Show before game starts
+  if (hasLoadedInitialData && !started && playerColor) {
+    const gameUrl =
+      typeof window !== 'undefined'
+        ? `${window.location.origin}/game/${gameId}`
+        : '';
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-white dark:bg-gray-900">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-300 dark:border-gray-700 p-8 min-w-[320px] flex flex-col items-center md:min-w-lg">
+          <div className="w-full flex flex-col items-center mb-4">
+            <div className="font-semibold mb-1 text-lg">Game Link</div>
+            <div className="flex items-center gap-2 w-full">
+              <input
+                type="text"
+                value={gameUrl}
+                readOnly
+                className="w-full px-2 py-1 rounded border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 font-mono text-sm"
+                style={{ minWidth: 0 }}
+              />
+              <button
+                onClick={() => handleCopy(gameUrl)}
+                className="px-2 py-1 rounded bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors text-sm"
+                type="button"
+              >
+                {copied ? 'Copied!' : 'Copy'}
+              </button>
+            </div>
+          </div>
+          <div className="mb-4 w-full">
+            <div className="font-semibold mb-2 text-lg">Players</div>
+            <ul className="w-full">
+              {Object.values(players).length === 0 && (
+                <li className="text-gray-500 text-center">No players yet</li>
+              )}
+              {Object.values(players).map((player, i) => (
+                <li key={i} className="flex items-center gap-3 mb-2">
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      width: 22,
+                      height: 22,
+                      borderRadius: 8,
+                      background: player.color,
+                      border: '2px solid #bbb',
+                    }}
+                  />
+                  <span className="font-mono text-lg text-gray-800 dark:text-gray-100">
+                    {player.name}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <button
+            onClick={handleStartGame}
+            className="mt-2 px-6 py-2 rounded bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors text-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
+            disabled={Object.values(players).length < 2 || started}
+          >
+            Start Game
+          </button>
+          <div className="mt-2 text-gray-500 text-sm">
+            Waiting for players... (min 2 to start)
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show color/name picker if not set up
+  if (hasLoadedInitialData && !playerColor) {
+    return (
+      <ColorPicker
+        onSelect={selectColor}
+        takenColors={Object.values(players).map((p) => p.color)}
+      />
+    );
   }
 
   return (
@@ -249,13 +355,6 @@ export function Board() {
           padding: '48px 16px 0 16px',
         }}
       >
-        {/* Color selection modal */}
-        {hasLoadedInitialData && !playerColor && (
-          <ColorPicker
-            onSelect={selectColor}
-            takenColors={Object.values(players).map((p) => p.color)}
-          />
-        )}
         <div
           style={{
             display: 'flex',
