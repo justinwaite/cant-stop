@@ -4,7 +4,7 @@ import { readBoardState } from '~/utils/board-state.server';
 import { getPlayerSession } from '~/utils/session.server';
 import type { GameState, BoardActionRequest } from '~/types';
 
-export async function action({ request }: ActionFunctionArgs) {
+export async function action({ request, params }: ActionFunctionArgs) {
   if (request.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405,
@@ -20,11 +20,23 @@ export async function action({ request }: ActionFunctionArgs) {
     });
   }
 
-  const { pieces, whitePieces, playerColors, lockedColumns } =
-    (await request.json()) as BoardActionRequest;
+  const {
+    pieces,
+    whitePieces,
+    players,
+    lockedColumns,
+    gameId: bodyGameId,
+  } = (await request.json()) as BoardActionRequest & { gameId?: string };
+  const gameId = bodyGameId || params.gameId;
+  if (!gameId) {
+    return new Response(JSON.stringify({ error: 'Missing gameId' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
 
   // Defensive: always start from the latest state
-  const prevState = await readBoardState();
+  const prevState = await readBoardState(gameId);
   const newLocked = { ...prevState.lockedColumns, ...lockedColumns };
   const newPieces: Record<string, string[]> = { ...pieces };
 
@@ -47,16 +59,16 @@ export async function action({ request }: ActionFunctionArgs) {
     }
   }
 
-  // Merge player colors: keep existing ones and add/update from request
-  const mergedPlayerColors = {
-    ...prevState.playerColors,
-    ...playerColors,
+  // Merge players: keep existing ones and add/update from request
+  const mergedPlayers = {
+    ...prevState.players,
+    ...players,
   };
 
   const newState = {
     pieces: newPieces,
     whitePieces,
-    playerColors: mergedPlayerColors,
+    players: mergedPlayers,
     lockedColumns: newLocked,
   } satisfies GameState;
   await broadcastBoardState(newState);

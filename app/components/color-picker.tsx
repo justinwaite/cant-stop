@@ -1,5 +1,5 @@
 interface ColorPickerProps {
-  onSelectColor: (color: string) => void;
+  onSelect: (color: string, name: string) => void;
   takenColors?: string[];
 }
 
@@ -12,10 +12,16 @@ const playerColors = [
   '#ea580c', // orange
 ];
 
-export function ColorPicker({
-  onSelectColor,
-  takenColors = [],
-}: ColorPickerProps) {
+import { useState } from 'react';
+
+export function ColorPicker({ onSelect, takenColors = [] }: ColorPickerProps) {
+  const [name, setName] = useState('');
+  const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  const canSubmit =
+    name.trim().length > 0 &&
+    selectedColor &&
+    !takenColors.includes(selectedColor);
+
   return (
     <div
       style={{
@@ -44,13 +50,32 @@ export function ColorPicker({
         }}
       >
         <div style={{ fontWeight: 'bold', fontSize: 20, marginBottom: 8 }}>
-          Pick your color
+          Pick your color & name
         </div>
-        <div style={{ display: 'flex', gap: 16 }}>
+        <input
+          type="text"
+          placeholder="Enter your name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          style={{
+            fontSize: 16,
+            padding: '8px 12px',
+            borderRadius: 8,
+            border: '1px solid #bbb',
+            marginBottom: 12,
+            width: '100%',
+            background: 'var(--input-bg, #fff)',
+            color: 'var(--input-color, #222)',
+          }}
+          maxLength={20}
+          className="dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400"
+        />
+        <div style={{ display: 'flex', gap: 16, marginBottom: 12 }}>
           {playerColors.map((color) => {
             const taken = takenColors.includes(color);
             return (
               <div
+                key={color}
                 style={{
                   position: 'relative',
                   width: 40,
@@ -59,14 +84,16 @@ export function ColorPicker({
                 }}
               >
                 <button
-                  key={color}
-                  onClick={() => !taken && onSelectColor(color)}
+                  onClick={() => !taken && setSelectedColor(color)}
                   disabled={taken}
                   style={{
                     width: 40,
                     height: 40,
                     background: color,
-                    border: '2px solid #bbb',
+                    border:
+                      selectedColor === color
+                        ? '3px solid #222'
+                        : '2px solid #bbb',
                     borderRadius: 8,
                     cursor: taken ? 'not-allowed' : 'pointer',
                     overflow: 'hidden',
@@ -102,6 +129,25 @@ export function ColorPicker({
             );
           })}
         </div>
+        <button
+          onClick={() =>
+            canSubmit && selectedColor && onSelect(selectedColor, name.trim())
+          }
+          disabled={!canSubmit}
+          style={{
+            fontSize: 16,
+            padding: '8px 24px',
+            borderRadius: 8,
+            border: 'none',
+            background: canSubmit ? '#2563eb' : '#bbb',
+            color: '#fff',
+            fontWeight: 'bold',
+            cursor: canSubmit ? 'pointer' : 'not-allowed',
+            marginTop: 8,
+          }}
+        >
+          Join Game
+        </button>
       </div>
     </div>
   );

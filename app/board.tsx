@@ -55,9 +55,9 @@ export function Board() {
   const [pieces, setPieces] = useState<Record<string, string[]>>({});
   // Store placed white pieces as a set of slot keys
   const [whitePieces, setWhitePieces] = useState<Set<string>>(new Set());
-  // Store player colors from game state
-  const [playerColorsState, setPlayerColorsState] = useState<
-    Record<string, string>
+  // Store players from game state
+  const [players, setPlayers] = useState<
+    Record<string, { color: string; name: string }>
   >({});
   // Track if initial data has been loaded from SSE
   const [hasLoadedInitialData, setHasLoadedInitialData] = useState(false);
@@ -74,11 +74,11 @@ export function Board() {
   const [lastRoll, setLastRoll] = useState<number[] | null>(null);
 
   // Get current player's color from game state
-  const playerColor = playerColorsState[pid] || null;
+  const playerColor = players[pid]?.color || null;
 
   // Helper function to get color from player ID
   function getColorFromPlayerId(playerId: string): string {
-    return playerColorsState[playerId] || '#ccc'; // fallback color
+    return players[playerId]?.color || '#ccc'; // fallback color
   }
 
   // SSE: Listen for board state updates
@@ -93,7 +93,7 @@ export function Board() {
           setPieces(state.pieces || {});
           setWhitePieces(new Set(state.whitePieces || []));
           setLockedColumns(state.lockedColumns || {});
-          setPlayerColorsState(state.playerColors || {});
+          setPlayers(state.players || {});
           setLastRoll(state.lastRoll ?? null);
           setHasLoadedInitialData(true);
         }
@@ -116,7 +116,6 @@ export function Board() {
       body: JSON.stringify({
         pieces: newPieces,
         whitePieces: Array.from(newWhite),
-        playerColors: {}, // Player colors are handled separately
         lockedColumns: newLocked,
       }),
     }).finally(() => {
@@ -126,13 +125,13 @@ export function Board() {
     });
   }
 
-  // Function to select a color
-  function selectColor(color: string) {
+  // Function to select a color and name
+  function selectColor(color: string, name: string) {
     if (!gameId) return;
     fetch('/api/pick-color', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ color, gameId }),
+      body: JSON.stringify({ color, name, gameId }),
     });
   }
 
@@ -206,7 +205,7 @@ export function Board() {
   }
 
   function handleChangeColor() {
-    selectColor('');
+    selectColor('', '');
   }
 
   // Roll dice and update shared state
@@ -226,7 +225,11 @@ export function Board() {
   return (
     <>
       {/* Menu */}
-      <Menu onChangeColor={handleChangeColor} gameId={gameId} />
+      <Menu
+        onChangeColor={handleChangeColor}
+        gameId={gameId}
+        players={players}
+      />
       {/* Game ID display */}
       <div
         className="fixed top-4 left-20 z-40 px-3 py-1 rounded-lg bg-white/90 dark:bg-gray-900/90 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 font-mono font-bold text-lg shadow"
@@ -249,8 +252,8 @@ export function Board() {
         {/* Color selection modal */}
         {hasLoadedInitialData && !playerColor && (
           <ColorPicker
-            onSelectColor={selectColor}
-            takenColors={Object.values(playerColorsState)}
+            onSelect={selectColor}
+            takenColors={Object.values(players).map((p) => p.color)}
           />
         )}
         <div

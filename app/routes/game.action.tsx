@@ -51,7 +51,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
   }
 
   // Otherwise, handle as a board update
-  const { pieces, whitePieces, playerColors, lockedColumns } =
+  const { pieces, whitePieces, players, lockedColumns } =
     reqBody as BoardActionRequest;
 
   // Defensive: always start from the latest state
@@ -78,16 +78,16 @@ export async function action({ request, params }: ActionFunctionArgs) {
     }
   }
 
-  // Merge player colors: keep existing ones and add/update from request
-  const mergedPlayerColors = {
-    ...prevState.playerColors,
-    ...playerColors,
+  // Merge players: keep existing ones and add/update from request
+  const mergedPlayers = {
+    ...prevState.players,
+    ...players,
   };
 
   const newState = {
     pieces: newPieces,
     whitePieces,
-    playerColors: mergedPlayerColors,
+    players: mergedPlayers,
     lockedColumns: newLocked,
     lastRoll: prevState.lastRoll,
   } satisfies GameState;

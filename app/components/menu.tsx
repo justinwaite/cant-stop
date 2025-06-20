@@ -4,11 +4,13 @@ import { useNavigate } from 'react-router';
 interface MenuProps {
   onChangeColor: () => void;
   gameId: string;
+  players: Record<string, { color: string; name: string }>;
 }
 
-export function Menu({ onChangeColor, gameId }: MenuProps) {
+export function Menu({ onChangeColor, gameId, players }: MenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showPlayers, setShowPlayers] = useState(false);
   const navigate = useNavigate();
 
   function handleCopyGameUrl() {
@@ -80,6 +82,25 @@ export function Menu({ onChangeColor, gameId }: MenuProps) {
               {copied ? 'Copied!' : 'Copy Game URL'}
             </button>
             <button
+              onClick={() => setShowPlayers(true)}
+              className="w-full px-4 py-3 bg-none border-none text-left cursor-pointer text-sm text-gray-700 dark:text-gray-200 border-b border-gray-200 dark:border-gray-600 flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="7" r="4" />
+                <path d="M5.5 21a8.38 8.38 0 0 1 13 0" />
+              </svg>
+              Player List
+            </button>
+            <button
               onClick={() => {
                 onChangeColor();
                 setIsOpen(false);
@@ -123,6 +144,50 @@ export function Menu({ onChangeColor, gameId }: MenuProps) {
                 <line x1="15" y1="12" x2="3" y2="12" />
               </svg>
               Exit Game
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* Player List Modal */}
+      {showPlayers && (
+        <>
+          <div
+            className="fixed inset-0 z-50 bg-black/40"
+            onClick={() => setShowPlayers(false)}
+          />
+          <div
+            className="fixed top-1/2 left-1/2 z-50 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-300 dark:border-gray-700 p-6 min-w-[260px] min-h-[120px] flex flex-col items-center"
+            style={{ transform: 'translate(-50%, -50%)' }}
+          >
+            <div className="font-bold text-lg mb-4">Players</div>
+            <ul className="w-full">
+              {Object.values(players).length === 0 && (
+                <li className="text-gray-500 text-center">No players yet</li>
+              )}
+              {Object.values(players).map((player, i) => (
+                <li key={i} className="flex items-center gap-3 mb-2">
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      width: 18,
+                      height: 18,
+                      borderRadius: 6,
+                      background: player.color,
+                      border: '2px solid #bbb',
+                    }}
+                  />
+                  <span className="font-mono text-base text-gray-800 dark:text-gray-100">
+                    {player.name}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <button
+              onClick={() => setShowPlayers(false)}
+              className="mt-4 px-4 py-1.5 rounded bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors"
+            >
+              Close
             </button>
           </div>
         </>

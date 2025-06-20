@@ -21,7 +21,7 @@ export async function action({ request }: ActionFunctionArgs) {
     });
   }
 
-  const { color, gameId } = await request.json();
+  const { color, name, gameId } = await request.json();
 
   if (!gameId || !isValidGameCode(gameId)) {
     return new Response(JSON.stringify({ error: 'Invalid game code' }), {
@@ -37,21 +37,21 @@ export async function action({ request }: ActionFunctionArgs) {
     });
   }
 
-  // Read current state and update player colors
+  // Read current state and update players
   const currentState = await readBoardState(gameId);
-  const newPlayerColors = { ...currentState.playerColors };
+  const newPlayers = { ...currentState.players };
 
   if (color === '') {
-    // Clear the player's color
-    delete newPlayerColors[playerSession.pid];
+    // Clear the player's entry
+    delete newPlayers[playerSession.pid];
   } else {
-    // Set the player's color
-    newPlayerColors[playerSession.pid] = color;
+    // Set the player's color and name
+    newPlayers[playerSession.pid] = { color, name };
   }
 
   const newState: GameState = {
     ...currentState,
-    playerColors: newPlayerColors,
+    players: newPlayers,
   };
 
   await broadcastBoardState(gameId, newState);
