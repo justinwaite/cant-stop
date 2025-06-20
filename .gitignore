@@ -6,5 +6,6 @@
 /build/
 
 board-state.json
+boards/
 
 .idea/

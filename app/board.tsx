@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
+import { useParams, useRouteLoaderData } from 'react-router';
 import './app.css';
-import type { BoardActionRequest } from './types';
+import type { BoardActionRequest, GameState } from './types';
 import { usePlayerSession } from '~/utils/use-player-session';
 import { ActionBar } from './components/action-bar';
 import { ColorPicker } from './components/color-picker';
@@ -42,6 +43,11 @@ function slotKey(colIdx: number, slotIdx: number) {
 
 export function Board() {
   const { pid } = usePlayerSession();
+  const { gameId } = useParams<{ gameId: string }>();
+  const routeData = useRouteLoaderData('routes/game') as {
+    gameId: string;
+    gameState: any;
+  };
 
   // Store placed pieces as a mapping slotKey -> array of playerIds
   const [pieces, setPieces] = useState<Record<string, string[]>>({});
@@ -62,11 +68,6 @@ export function Board() {
     {},
   );
 
-  // Ref for the scroll container
-  const scrollRef = useRef<HTMLDivElement>(null);
-  // Store scrollLeft before update
-  const scrollLeftRef = useRef<number>(0);
-
   // Get current player's color from game state
   const playerColor = playerColorsState[pid] || null;
 
@@ -77,15 +78,13 @@ export function Board() {
 
   // SSE: Listen for board state updates
   useEffect(() => {
-    const evtSource = new EventSource('/board/stream');
+    if (!gameId) return;
+
+    const evtSource = new EventSource(`/game/${gameId}/stream`);
     evtSource.onmessage = (event) => {
       if (!event.data) return;
       try {
-        // Save scroll position before state update
-        if (scrollRef.current) {
-          scrollLeftRef.current = scrollRef.current.scrollLeft;
-        }
-        const state: BoardActionRequest = JSON.parse(event.data);
+        const state: GameState = JSON.parse(event.data);
         if (state) {
           setPieces(state.pieces || {});
           setWhitePieces(new Set(state.whitePieces || []));
@@ -96,14 +95,7 @@ export function Board() {
       } catch {}
     };
     return () => evtSource.close();
-  }, []);
-
-  // Restore scroll position after board updates
-  useEffect(() => {
-    if (scrollRef.current && scrollLeftRef.current > 0) {
-      scrollRef.current.scrollLeft = scrollLeftRef.current;
-    }
-  }, [pieces, whitePieces, lockedColumns]);
+  }, [gameId]);
 
   // POST new board state to server using fetch
   function syncBoardState(
@@ -111,9 +103,9 @@ export function Board() {
     newWhite: Set<string>,
     newLocked: Record<number, string> = lockedColumns,
   ) {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !gameId) return;
     isLocalChange.current = true;
-    fetch('/board/action', {
+    fetch(`/game/${gameId}/action`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -131,10 +123,11 @@ export function Board() {
 
   // Function to select a color
   function selectColor(color: string) {
+    if (!gameId) return;
     fetch('/api/pick-color', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ color }),
+      body: JSON.stringify({ color, gameId }),
     });
   }
 
@@ -211,20 +204,30 @@ export function Board() {
     selectColor('');
   }
 
+  if (!gameId) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <>
       {/* Menu */}
-      <Menu onChangeColor={handleChangeColor} />
+      <Menu onChangeColor={handleChangeColor} gameId={gameId} />
+      {/* Game ID display */}
+      <div
+        className="fixed top-4 left-20 z-40 px-3 py-1 rounded-lg bg-white/90 dark:bg-gray-900/90 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 font-mono font-bold text-lg shadow"
+        style={{ letterSpacing: '0.15em', minWidth: 90, textAlign: 'center' }}
+      >
+        {gameId}
+      </div>
 
       {/* Board scroll area */}
       <div
-        ref={scrollRef}
         style={{
           position: 'relative',
           width: '100vw',
           maxWidth: '100vw',
           overflowX: 'auto',
-          padding: '0 16px',
+          padding: '48px 16px 0 16px',
         }}
       >
         {/* Color selection modal */}

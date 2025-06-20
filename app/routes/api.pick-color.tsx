@@ -1,7 +1,8 @@
 import type { ActionFunctionArgs } from 'react-router';
-import { broadcastBoardState } from './board.stream';
+import { broadcastBoardState } from '~/routes/game.stream';
 import { readBoardState } from '~/utils/board-state.server';
 import { getPlayerSession } from '~/utils/session.server';
+import { isValidGameCode } from '~/utils/game-code';
 import type { GameState } from '~/types';
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -20,7 +21,15 @@ export async function action({ request }: ActionFunctionArgs) {
     });
   }
 
-  const { color } = await request.json();
+  const { color, gameId } = await request.json();
+
+  if (!gameId || !isValidGameCode(gameId)) {
+    return new Response(JSON.stringify({ error: 'Invalid game code' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   if (color === undefined || typeof color !== 'string') {
     return new Response(JSON.stringify({ error: 'Invalid color' }), {
       status: 400,
@@ -29,7 +38,7 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   // Read current state and update player colors
-  const currentState = await readBoardState();
+  const currentState = await readBoardState(gameId);
   const newPlayerColors = { ...currentState.playerColors };
 
   if (color === '') {
@@ -45,7 +54,7 @@ export async function action({ request }: ActionFunctionArgs) {
     playerColors: newPlayerColors,
   };
 
-  await broadcastBoardState(newState);
+  await broadcastBoardState(gameId, newState);
 
   return new Response(JSON.stringify({ ok: true }), {
     status: 200,
