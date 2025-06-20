@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { useParams, useRouteLoaderData } from 'react-router';
 import './app.css';
 import type { BoardActionRequest, GameState } from './types';
@@ -6,6 +6,8 @@ import { usePlayerSession } from '~/utils/use-player-session';
 import { ActionBar } from './components/action-bar';
 import { ColorPicker } from './components/color-picker';
 import { Menu } from './components/menu';
+import { DiceModal } from './components/dice-modal';
+import { DiceBar } from './components/dice-bar';
 
 // Number of slots per column for Can't Stop (columns 2-12)
 const columnSlots = [
@@ -68,6 +70,9 @@ export function Board() {
     {},
   );
 
+  // Store last dice roll from game state
+  const [lastRoll, setLastRoll] = useState<number[] | null>(null);
+
   // Get current player's color from game state
   const playerColor = playerColorsState[pid] || null;
 
@@ -79,17 +84,17 @@ export function Board() {
   // SSE: Listen for board state updates
   useEffect(() => {
     if (!gameId) return;
-
     const evtSource = new EventSource(`/game/${gameId}/stream`);
     evtSource.onmessage = (event) => {
       if (!event.data) return;
       try {
-        const state: GameState = JSON.parse(event.data);
+        const state: BoardActionRequest = JSON.parse(event.data);
         if (state) {
           setPieces(state.pieces || {});
           setWhitePieces(new Set(state.whitePieces || []));
           setLockedColumns(state.lockedColumns || {});
           setPlayerColorsState(state.playerColors || {});
+          setLastRoll(state.lastRoll ?? null);
           setHasLoadedInitialData(true);
         }
       } catch {}
@@ -204,6 +209,16 @@ export function Board() {
     selectColor('');
   }
 
+  // Roll dice and update shared state
+  function handleRollDice() {
+    if (!gameId) return;
+    fetch(`/game/${gameId}/action`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rollDice: true }),
+    });
+  }
+
   if (!gameId) {
     return <div>Loading...</div>;
   }
@@ -219,7 +234,8 @@ export function Board() {
       >
         {gameId}
       </div>
-
+      {/* Dice Bar */}
+      <DiceBar roll={lastRoll} />
       {/* Board scroll area */}
       <div
         style={{
@@ -346,6 +362,7 @@ export function Board() {
         whitePieces={whitePieces}
         onBust={handleBust}
         onHold={handleHold}
+        onRollDice={handleRollDice}
       />
     </>
   );

@@ -17,6 +17,7 @@ export async function readBoardState(gameId: string): Promise<GameState> {
       whitePieces: [],
       playerColors: {},
       lockedColumns: {},
+      lastRoll: null,
     };
   }
 }

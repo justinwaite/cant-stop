@@ -5,6 +5,10 @@ import { getPlayerSession } from '~/utils/session.server';
 import { isValidGameCode } from '~/utils/game-code';
 import type { GameState, BoardActionRequest } from '~/types';
 
+function rollFourDice() {
+  return Array.from({ length: 4 }, () => Math.floor(Math.random() * 6) + 1);
+}
+
 export async function action({ request, params }: ActionFunctionArgs) {
   if (request.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
@@ -30,8 +34,25 @@ export async function action({ request, params }: ActionFunctionArgs) {
     });
   }
 
+  const reqBody = await request.json();
+
+  // Handle dice roll action
+  if (reqBody.rollDice) {
+    const prevState = await readBoardState(gameId);
+    const newState: GameState = {
+      ...prevState,
+      lastRoll: rollFourDice(),
+    };
+    await broadcastBoardState(gameId, newState);
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  // Otherwise, handle as a board update
   const { pieces, whitePieces, playerColors, lockedColumns } =
-    (await request.json()) as BoardActionRequest;
+    reqBody as BoardActionRequest;
 
   // Defensive: always start from the latest state
   const prevState = await readBoardState(gameId);
@@ -68,6 +89,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
     whitePieces,
     playerColors: mergedPlayerColors,
     lockedColumns: newLocked,
+    lastRoll: prevState.lastRoll,
   } satisfies GameState;
 
   await broadcastBoardState(gameId, newState);

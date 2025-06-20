@@ -3,6 +3,7 @@ export type GameState = {
   whitePieces: Array<string>;
   playerColors: Record<string, string>; // playerId -> color
   lockedColumns: Record<number, string>; // columnIndex -> playerId who locked it
+  lastRoll?: number[] | null; // last dice roll (4 dice)
 };
 
 export type BoardActionRequest = {
@@ -10,4 +11,5 @@ export type BoardActionRequest = {
   whitePieces: string[]; // white piece slot keys
   playerColors: Record<string, string>; // playerId -> color
   lockedColumns?: Record<number, string>; // columnIndex -> playerId who locked it
+  lastRoll?: number[] | null; // last dice roll (4 dice)
 };
