@@ -1,10 +1,8 @@
-import type { LoaderFunctionArgs } from 'react-router';
-import { readBoardState, writeBoardState } from '~/utils/board-state.server';
+import {controllers, readBoardState} from '~/utils/board-state.server';
 import { isValidGameCode } from '~/utils/game-code';
+import type { Route } from './+types/game.stream';
 
-let controllers: Record<string, ReadableStreamDefaultController[]> = {};
-
-export async function loader({ request, params }: LoaderFunctionArgs) {
+export async function loader({ request, params }: Route.LoaderArgs) {
   if (request.method !== 'GET') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405,
@@ -60,17 +58,3 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   });
 }
 
-// Helper to broadcast to all clients for a specific game
-export async function broadcastBoardState(gameId: string, newState: any) {
-  await writeBoardState(gameId, newState);
-
-  if (controllers[gameId]) {
-    for (const controller of controllers[gameId]) {
-      try {
-        controller.enqueue(`data: ${JSON.stringify(newState)}\n\n`);
-      } catch (e) {
-        // Ignore errors from closed controllers
-      }
-    }
-  }
-}

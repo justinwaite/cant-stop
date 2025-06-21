@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
 import { usePlayerSession } from '~/utils/use-player-session';
 
 interface MenuProps {
@@ -18,7 +17,6 @@ export function Menu({
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showPlayers, setShowPlayers] = useState(false);
-  const navigate = useNavigate();
   const { pid } = usePlayerSession();
 
   async function handleRemovePlayer(playerId: string) {

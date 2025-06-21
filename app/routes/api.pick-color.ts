@@ -1,6 +1,5 @@
 import type { ActionFunctionArgs } from 'react-router';
-import { broadcastBoardState } from '~/routes/game.stream';
-import { readBoardState } from '~/utils/board-state.server';
+import {broadcastBoardState, readBoardState} from '~/utils/board-state.server';
 import { getPlayerSession } from '~/utils/session.server';
 import { isValidGameCode } from '~/utils/game-code';
 import type { GameState } from '~/types';
