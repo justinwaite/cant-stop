@@ -173,6 +173,16 @@ export function choosePairs(
 
       // Simulate applying the submitted pair to the temporary state (without actually changing the real state)
       if (tempState.neutralPieces[submittedSum] !== undefined) {
+        // Check if advancing this piece would go out of bounds
+        const currentSlot = tempState.neutralPieces[submittedSum];
+        const topSlot = getTopSlotForColumn(submittedSum);
+        if (currentSlot >= topSlot - 1) {
+          return {
+            ...state,
+            message:
+              'Invalid move: cannot advance piece beyond the top of the column.',
+          };
+        }
         tempState.neutralPieces[submittedSum] += 1;
       } else {
         // Check if player already has a permanent piece in this column
@@ -225,6 +235,16 @@ export function choosePairs(
   for (const pair of validPairs) {
     const sum = sumPair(pair);
     if (newNeutralPieces[sum] !== undefined) {
+      // Check if advancing this piece would go out of bounds
+      const currentSlot = newNeutralPieces[sum];
+      const topSlot = getTopSlotForColumn(sum);
+      if (currentSlot >= topSlot - 1) {
+        return {
+          ...state,
+          message:
+            'Invalid move: cannot advance piece beyond the top of the column.',
+        };
+      }
       newNeutralPieces[sum] += 1;
     } else {
       // Check if player already has a permanent piece in this column
