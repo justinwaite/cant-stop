@@ -3,11 +3,8 @@ import { useParams, useRouteLoaderData } from 'react-router';
 import './app.css';
 import type { GameState } from './types';
 import { usePlayerSession } from '~/utils/use-player-session';
-import { ActionBar } from './components/action-bar';
 import { ColorPicker } from './components/color-picker';
 import { Menu } from './components/menu';
-import { DiceModal } from './components/dice-modal';
-import { DiceBar } from './components/dice-bar';
 
 const slotSize = 32;
 const slotGap = 8;
@@ -106,6 +103,7 @@ export function Board() {
   const [isTouchDragging, setIsTouchDragging] = useState(false);
   const [touchPosition, setTouchPosition] = useState({ x: 0, y: 0 });
   const [showBustPopup, setShowBustPopup] = useState(false);
+  const [showColorPicker, setShowColorPicker] = useState(false);
 
   // SSE: Listen for board state updates
   useEffect(() => {
@@ -126,7 +124,13 @@ export function Board() {
 
   // Intent-sending functions
   async function sendIntent(
-    intent: 'rollDice' | 'hold' | 'choosePairs' | 'startGame',
+    intent:
+      | 'rollDice'
+      | 'hold'
+      | 'choosePairs'
+      | 'startGame'
+      | 'updatePlayerInfo'
+      | 'quitGame',
     parameters?: any,
   ) {
     const response = await fetch(`/game/${gameId}/action`, {
@@ -143,6 +147,15 @@ export function Board() {
   }
   async function sendChoosePairs(pairs: [[number, number], [number, number]]) {
     await sendIntent('choosePairs', { pairs });
+  }
+
+  async function quitGame() {
+    if (!gameId) return;
+    await sendIntent('quitGame');
+    // Navigate to home after quitting
+    if (typeof window !== 'undefined') {
+      window.location.href = '/';
+    }
   }
 
   // UI helpers
@@ -286,6 +299,25 @@ export function Board() {
     );
   }
 
+  // Show color picker for editing
+  if (showColorPicker) {
+    return (
+      <ColorPicker
+        onSelect={(color, name) => {
+          if (!gameId) return;
+          sendIntent('updatePlayerInfo', { color, name });
+          setShowColorPicker(false);
+        }}
+        takenColors={Object.values(players)
+          .filter((p) => p.color !== playerColor) // Exclude current player's color
+          .map((p) => p.color)}
+        initialColor={playerColor}
+        initialName={players[pid]?.name || ''}
+        isEditing={true}
+      />
+    );
+  }
+
   // LOBBY: Show before game starts
   if (hasLoadedInitialData && !started && playerColor) {
     const gameUrl =
@@ -392,12 +424,9 @@ export function Board() {
       <div className="fixed top-4 left-4 z-40">
         <Menu
           onChangeColor={() => {
-            // Reset player's color choice by clearing their session
-            if (typeof window !== 'undefined') {
-              localStorage.removeItem('playerSession');
-              window.location.reload();
-            }
+            setShowColorPicker(true);
           }}
+          onQuitGame={quitGame}
           gameId={gameId}
           players={players}
         />

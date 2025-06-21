@@ -4,11 +4,17 @@ import { usePlayerSession } from '~/utils/use-player-session';
 
 interface MenuProps {
   onChangeColor: () => void;
+  onQuitGame: () => void;
   gameId: string;
   players: Record<string, { color: string; name: string }>;
 }
 
-export function Menu({ onChangeColor, gameId, players }: MenuProps) {
+export function Menu({
+  onChangeColor,
+  onQuitGame,
+  gameId,
+  players,
+}: MenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showPlayers, setShowPlayers] = useState(false);
@@ -35,8 +41,9 @@ export function Menu({ onChangeColor, gameId, players }: MenuProps) {
   }
 
   function handleExitGame() {
+    if (!window.confirm('Are you sure you want to quit the game?')) return;
     setIsOpen(false);
-    navigate('/');
+    onQuitGame();
   }
 
   return (
@@ -155,7 +162,7 @@ export function Menu({ onChangeColor, gameId, players }: MenuProps) {
                 <polyline points="10 17 15 12 10 7" />
                 <line x1="15" y1="12" x2="3" y2="12" />
               </svg>
-              Exit Game
+              Quit Game
             </button>
           </div>
         </>

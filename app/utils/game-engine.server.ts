@@ -384,3 +384,101 @@ export function startGame(state: GameState): GameState {
     winner: undefined,
   };
 }
+
+export function updatePlayerInfo(
+  state: GameState,
+  playerId: string,
+  color: string,
+  name: string,
+): GameState {
+  // Check if the color is already taken by another player
+  const colorTaken = Object.entries(state.players).some(
+    ([pid, player]) => pid !== playerId && player.color === color,
+  );
+
+  if (colorTaken) {
+    return {
+      ...state,
+      message: 'That color is already taken by another player.',
+    };
+  }
+
+  return {
+    ...state,
+    players: {
+      ...state.players,
+      [playerId]: { color, name },
+    },
+    message: undefined,
+  };
+}
+
+export function quitGame(state: GameState, playerId: string): GameState {
+  // Remove player from players list
+  const newPlayers = { ...state.players };
+  delete newPlayers[playerId];
+
+  // Remove player from turn order
+  const newPlayerOrder = state.playerOrder.filter((id) => id !== playerId);
+
+  // If no players left, return empty state
+  if (Object.keys(newPlayers).length === 0) {
+    return {
+      ...state,
+      players: {},
+      playerOrder: [],
+      turnIndex: 0,
+      started: false,
+      phase: 'rolling',
+      dice: null,
+      neutralPieces: {},
+      winner: undefined,
+      message: undefined,
+    };
+  }
+
+  // Adjust turn index if the quitting player was current or before current
+  let newTurnIndex = state.turnIndex;
+  if (newPlayerOrder.length > 0) {
+    // If the quitting player was the current player or before them in turn order
+    const quittingPlayerIndex = state.playerOrder.indexOf(playerId);
+    if (quittingPlayerIndex <= state.turnIndex) {
+      // Adjust turn index to point to the next valid player
+      newTurnIndex = Math.max(0, state.turnIndex - 1);
+      // Make sure we don't go out of bounds
+      if (newTurnIndex >= newPlayerOrder.length) {
+        newTurnIndex = 0;
+      }
+    }
+  }
+
+  // Clear neutral pieces if the quitting player had any
+  const newNeutralPieces = { ...state.neutralPieces };
+  // Note: We could also remove their permanent pieces, but that might be too disruptive
+  // For now, we'll keep their permanent pieces on the board
+
+  // Remove the player's permanent pieces from the board
+  const newPieces = { ...state.pieces };
+  for (const [columnStr, pieces] of Object.entries(newPieces)) {
+    const column = Number(columnStr);
+    newPieces[column] = pieces.filter((p) => p.playerId !== playerId);
+  }
+
+  // Remove empty columns from pieces
+  for (const [columnStr, pieces] of Object.entries(newPieces)) {
+    const column = Number(columnStr);
+    if (pieces.length === 0) {
+      delete newPieces[column];
+    }
+  }
+
+  return {
+    ...state,
+    players: newPlayers,
+    playerOrder: newPlayerOrder,
+    turnIndex: newTurnIndex,
+    neutralPieces: newNeutralPieces,
+    pieces: newPieces,
+    message: undefined,
+  };
+}

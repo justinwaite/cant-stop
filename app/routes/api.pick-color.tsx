@@ -56,18 +56,26 @@ export async function action({ request }: ActionFunctionArgs) {
   // Read current state and update players
   const currentState = await readBoardState(gameId);
   const newPlayers = { ...currentState.players };
+  let newPlayerOrder = [...(currentState.playerOrder || [])];
 
   if (color === '') {
     // Clear the player's entry
     delete newPlayers[playerSession.pid];
+    // Remove from turn order if present
+    newPlayerOrder = newPlayerOrder.filter((id) => id !== playerSession.pid);
   } else {
     // Set the player's color and name
     newPlayers[playerSession.pid] = { color, name };
+    // Add to turn order if not already present
+    if (!newPlayerOrder.includes(playerSession.pid)) {
+      newPlayerOrder.push(playerSession.pid);
+    }
   }
 
   const newState: GameState = {
     ...currentState,
     players: newPlayers,
+    playerOrder: newPlayerOrder,
   };
 
   await broadcastBoardState(gameId, newState);

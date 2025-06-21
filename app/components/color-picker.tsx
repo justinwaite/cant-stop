@@ -1,6 +1,9 @@
 interface ColorPickerProps {
   onSelect: (color: string, name: string) => void;
   takenColors?: string[];
+  initialColor?: string | null;
+  initialName?: string;
+  isEditing?: boolean;
 }
 
 const playerColors = [
@@ -11,11 +14,26 @@ const playerColors = [
   '#9333ea', // purple
 ];
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
-export function ColorPicker({ onSelect, takenColors = [] }: ColorPickerProps) {
-  const [name, setName] = useState('');
-  const [selectedColor, setSelectedColor] = useState<string | null>(null);
+export function ColorPicker({
+  onSelect,
+  takenColors = [],
+  initialColor = null,
+  initialName = '',
+  isEditing = false,
+}: ColorPickerProps) {
+  const [name, setName] = useState(initialName);
+  const [selectedColor, setSelectedColor] = useState<string | null>(
+    initialColor,
+  );
+
+  // Update state when initial values change
+  useEffect(() => {
+    setName(initialName);
+    setSelectedColor(initialColor);
+  }, [initialName, initialColor]);
+
   const canSubmit =
     name.trim().length > 0 &&
     selectedColor &&
@@ -55,7 +73,7 @@ export function ColorPicker({ onSelect, takenColors = [] }: ColorPickerProps) {
         }}
       >
         <div style={{ fontWeight: 'bold', fontSize: 20, marginBottom: 8 }}>
-          Pick your color & name
+          {isEditing ? 'Edit your color & name' : 'Pick your color & name'}
         </div>
         <input
           type="text"
@@ -159,7 +177,7 @@ export function ColorPicker({ onSelect, takenColors = [] }: ColorPickerProps) {
             marginTop: 8,
           }}
         >
-          Join Game
+          {isEditing ? 'Update' : 'Join Game'}
         </button>
       </div>
     </div>

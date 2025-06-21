@@ -9,6 +9,8 @@ import {
   choosePairs,
   hold,
   startGame,
+  updatePlayerInfo,
+  quitGame,
 } from '~/utils/game-engine.server';
 
 // Type for the request body as a discriminated union
@@ -27,11 +29,23 @@ interface ChoosePairsAction {
     pairs: [[number, number], [number, number]];
   };
 }
+interface UpdatePlayerInfoAction {
+  intent: 'updatePlayerInfo';
+  parameters: {
+    color: string;
+    name: string;
+  };
+}
+interface QuitGameAction {
+  intent: 'quitGame';
+}
 type GameActionRequest =
   | RollDiceAction
   | HoldAction
   | StartGameAction
-  | ChoosePairsAction;
+  | ChoosePairsAction
+  | UpdatePlayerInfoAction
+  | QuitGameAction;
 
 export async function action({ request, params }: ActionFunctionArgs) {
   if (request.method !== 'POST') {
@@ -81,6 +95,17 @@ export async function action({ request, params }: ActionFunctionArgs) {
       break;
     case 'startGame':
       newState = startGame(prevState);
+      break;
+    case 'updatePlayerInfo':
+      newState = updatePlayerInfo(
+        prevState,
+        playerSession.pid,
+        reqBody.parameters.color,
+        reqBody.parameters.name,
+      );
+      break;
+    case 'quitGame':
+      newState = quitGame(prevState, playerSession.pid);
       break;
     default:
       return new Response(JSON.stringify({ error: 'Unknown intent' }), {
