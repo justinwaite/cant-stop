@@ -59,6 +59,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
     started,
     playerOrder,
     turnIndex,
+    lastRoll,
   } = reqBody as BoardActionRequest;
 
   // Defensive: always start from the latest state
@@ -96,7 +97,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
     whitePieces,
     players: mergedPlayers,
     lockedColumns: newLocked,
-    lastRoll: prevState.lastRoll,
+    lastRoll: lastRoll !== undefined ? lastRoll : prevState.lastRoll,
     started: typeof started === 'boolean' ? started : prevState.started,
     playerOrder: playerOrder || prevState.playerOrder,
     turnIndex: typeof turnIndex === 'number' ? turnIndex : prevState.turnIndex,

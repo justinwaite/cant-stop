@@ -213,6 +213,7 @@ export function Board() {
         whitePieces: Array.from(nextWhitePieces),
         lockedColumns: nextLockedColumns,
         turnIndex: nextIndex,
+        lastRoll: null,
         players,
         playerOrder,
         started,
