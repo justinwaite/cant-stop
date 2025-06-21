@@ -12,12 +12,18 @@ export async function readBoardState(gameId: string): Promise<GameState> {
     const data = await fs.readFile(stateFile, 'utf8');
     return JSON.parse(data);
   } catch {
+    // Return a valid empty GameState
     return {
       pieces: {},
-      whitePieces: [],
       players: {},
       lockedColumns: {},
-      lastRoll: null,
+      playerOrder: [],
+      turnIndex: 0,
+      started: false,
+      phase: 'rolling',
+      dice: null,
+      neutralPieces: {},
+      winner: undefined,
     };
   }
 }

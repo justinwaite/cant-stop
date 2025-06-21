@@ -1,21 +1,18 @@
-export type GameState = {
-  pieces: Record<string, Array<string>>; // slotKey -> array of playerIds
-  whitePieces: Array<string>;
-  players: Record<string, { color: string; name: string }>; // playerId -> { color, name }
-  lockedColumns: Record<number, string>; // columnIndex -> playerId who locked it
-  lastRoll?: number[] | null; // last dice roll (4 dice)
-  started?: boolean; // whether the game has started
-  playerOrder?: string[]; // array of playerIds in turn order
-  turnIndex?: number; // index into playerOrder for whose turn it is
-};
+export type GamePhase = 'rolling' | 'pairing';
 
-export type BoardActionRequest = {
-  pieces: Record<string, string[]>; // slotKey -> array of playerIds
-  whitePieces: string[]; // white piece slot keys
-  players: Record<string, { color: string; name: string }>; // playerId -> { color, name }
-  lockedColumns?: Record<number, string>; // columnIndex -> playerId who locked it
-  lastRoll?: number[] | null; // last dice roll (4 dice)
-  started?: boolean; // whether the game has started
-  playerOrder?: string[];
-  turnIndex?: number;
-};
+export interface GameState {
+  // Board and player info
+  pieces: Record<number, Array<{ playerId: string; slot: number }>>; // column -> array of { playerId, slot }
+  players: Record<string, { color: string; name: string }>;
+  lockedColumns: Record<number, string>; // number -> playerId who won it
+  playerOrder: string[];
+  turnIndex: number;
+  started: boolean;
+
+  // Engine/gameplay info
+  phase: GamePhase;
+  dice: number[] | null;
+  neutralPieces: Record<string, number>; // number (column) -> slot index
+  winner?: string;
+  message?: string; // Message to show to the current player
+}

@@ -3,11 +3,35 @@ import { broadcastBoardState } from './game.stream';
 import { readBoardState } from '~/utils/board-state.server';
 import { getPlayerSession } from '~/utils/session.server';
 import { isValidGameCode } from '~/utils/game-code';
-import type { GameState, BoardActionRequest } from '~/types';
+import type { GameState } from '~/types';
+import {
+  rollDice,
+  choosePairs,
+  hold,
+  startGame,
+} from '~/utils/game-engine.server';
 
-function rollFourDice() {
-  return Array.from({ length: 4 }, () => Math.floor(Math.random() * 6) + 1);
+// Type for the request body as a discriminated union
+interface RollDiceAction {
+  intent: 'rollDice';
 }
+interface HoldAction {
+  intent: 'hold';
+}
+interface StartGameAction {
+  intent: 'startGame';
+}
+interface ChoosePairsAction {
+  intent: 'choosePairs';
+  parameters: {
+    pairs: [[number, number], [number, number]];
+  };
+}
+type GameActionRequest =
+  | RollDiceAction
+  | HoldAction
+  | StartGameAction
+  | ChoosePairsAction;
 
 export async function action({ request, params }: ActionFunctionArgs) {
   if (request.method !== 'POST') {
@@ -34,77 +58,39 @@ export async function action({ request, params }: ActionFunctionArgs) {
     });
   }
 
-  const reqBody = await request.json();
-
-  // Handle dice roll action
-  if (reqBody.rollDice) {
-    const prevState = await readBoardState(gameId);
-    const newState: GameState = {
-      ...prevState,
-      lastRoll: rollFourDice(),
-    };
-    await broadcastBoardState(gameId, newState);
-    return new Response(JSON.stringify({ ok: true }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-
-  // Otherwise, handle as a board update
-  const {
-    pieces,
-    whitePieces,
-    players,
-    lockedColumns,
-    started,
-    playerOrder,
-    turnIndex,
-    lastRoll,
-  } = reqBody as BoardActionRequest;
-
-  // Defensive: always start from the latest state
+  const reqBody = (await request.json()) as GameActionRequest;
   const prevState = await readBoardState(gameId);
-  const newLocked = { ...prevState.lockedColumns, ...lockedColumns };
-  const newPieces: Record<string, string[]> = { ...pieces };
+  let newState: GameState = prevState;
+  let bust = false;
 
-  // For each column, if the top slot contains any color, lock the column and clear all colored pieces from it
-  for (let colIdx = 0; colIdx < 11; ++colIdx) {
-    const topKey = `${colIdx}-0`;
-    if (
-      Array.isArray(newPieces[topKey]) &&
-      newPieces[topKey].length > 0 &&
-      !newLocked[colIdx]
-    ) {
-      // Lock the column and record which player locked it
-      newLocked[colIdx] = playerSession.pid;
-      // Remove all colored pieces from this column
-      for (let i = 0; i < 11 + 2 - Math.abs(6 - colIdx) * 2; ++i) {
-        // columnSlots[colIdx]
-        const k = `${colIdx}-${i}`;
-        delete newPieces[k];
-      }
+  switch (reqBody.intent) {
+    case 'rollDice': {
+      newState = rollDice(prevState, playerSession.pid);
+      bust = newState.turnIndex !== prevState.turnIndex;
+      break;
     }
+    case 'choosePairs':
+      newState = choosePairs(
+        prevState,
+        playerSession.pid,
+        reqBody.parameters.pairs,
+      );
+      break;
+    case 'hold':
+      newState = hold(prevState, playerSession.pid);
+      break;
+    case 'startGame':
+      newState = startGame(prevState);
+      break;
+    default:
+      return new Response(JSON.stringify({ error: 'Unknown intent' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
   }
-
-  // Merge players: keep existing ones and add/update from request
-  const mergedPlayers = {
-    ...prevState.players,
-    ...players,
-  };
-
-  const newState = {
-    pieces: newPieces,
-    whitePieces,
-    players: mergedPlayers,
-    lockedColumns: newLocked,
-    lastRoll: lastRoll !== undefined ? lastRoll : prevState.lastRoll,
-    started: typeof started === 'boolean' ? started : prevState.started,
-    playerOrder: playerOrder || prevState.playerOrder,
-    turnIndex: typeof turnIndex === 'number' ? turnIndex : prevState.turnIndex,
-  } satisfies GameState;
 
   await broadcastBoardState(gameId, newState);
-  return new Response(JSON.stringify({ ok: true }), {
+  return new Response(JSON.stringify({ ok: true, state: newState, bust }), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
   });
