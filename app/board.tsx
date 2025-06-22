@@ -106,9 +106,6 @@ export function Board() {
   const [showBustPopup, setShowBustPopup] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
 
-  // Add local state for next game button
-  const [startingNextGame, setStartingNextGame] = useState(false);
-
   // SSE: Listen for board state updates
   useEffect(() => {
     if (!gameId) return;
@@ -125,17 +122,6 @@ export function Board() {
     };
     return () => evtSource.close();
   }, [gameId]);
-
-  // Redirect to next game if I'm the creator and nextGame is set
-  useEffect(() => {
-    if (
-      gameState?.nextGame &&
-      gameState?.nextGameCreator === pid &&
-      gameId !== gameState.nextGame
-    ) {
-      navigate(`/game/${gameState.nextGame}`);
-    }
-  }, [gameState?.nextGame, gameState?.nextGameCreator, pid, gameId, navigate]);
 
   // Intent-sending functions
   async function sendIntent(
@@ -638,24 +624,12 @@ export function Board() {
               {gameState.players[winner]?.name || winner} wins!
             </div>
             {/* Next game logic */}
-            {!gameState.nextGame ? (
-              <button
-                className="mt-2 px-6 py-2 rounded bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors text-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
-                onClick={async () => {
-                  setStartingNextGame(true);
-                  await sendIntent('startNextGame');
-                  setStartingNextGame(false);
-                }}
-                disabled={startingNextGame}
-              >
-                Start New Game
-              </button>
-            ) : gameState.nextGame && gameState.nextGameCreator !== pid ? (
+            {gameState.nextGame ? (
               <a
                 href={`/game/${gameState.nextGame}`}
-                className="mt-2 px-6 py-2 rounded bg-green-600 text-white font-bold hover:bg-green-700 transition-colors text-lg"
+                className="mt-2 px-6 py-2 rounded bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors text-lg"
               >
-                Join Next Game
+                Play Again
               </a>
             ) : null}
           </div>

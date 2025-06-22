@@ -16,5 +16,4 @@ export interface GameState {
   winner?: string;
   message?: string; // Message to show to the current player
   nextGame?: string; // ID of the next game if created
-  nextGameCreator?: string; // Player ID of who created the next game
 }

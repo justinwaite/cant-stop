@@ -347,12 +347,15 @@ export function hold(state: GameState, playerId: string): GameState {
 
   // If the player won, do not advance the turn
   if (winner) {
+    // If nextGame is not set, generate a new game code
+    const nextGame = state.nextGame || generateGameCode();
     return {
       ...state,
       pieces: newPieces,
       lockedColumns: newLockedColumns,
       neutralPieces: {},
       winner,
+      nextGame,
       message: undefined,
     };
   }
@@ -517,18 +520,4 @@ export function addPlayer(
     playerOrder: newPlayerOrder,
     message: undefined,
   };
-}
-
-export function startNextGame(state: GameState, playerId: string) {
-  if (state.nextGame) {
-    // Already started
-    return { updatedState: state, newGameId: state.nextGame };
-  }
-  const newGameId = generateGameCode();
-  const updatedState: GameState = {
-    ...state,
-    nextGame: newGameId,
-    nextGameCreator: playerId,
-  };
-  return { updatedState, newGameId };
 }
