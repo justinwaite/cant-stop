@@ -433,7 +433,7 @@ export function updatePlayerInfo(
   };
 }
 
-export function quitGame(state: GameState, playerId: string): GameState {
+export function removePlayer(state: GameState, playerId: string): GameState {
   // Remove player from players list
   const newPlayers = { ...state.players };
   delete newPlayers[playerId];
@@ -457,25 +457,17 @@ export function quitGame(state: GameState, playerId: string): GameState {
     };
   }
 
-  // Adjust turn index if the quitting player was current or before current
+  // Adjust turn index if the removed player was current or before current
   let newTurnIndex = state.turnIndex;
   if (newPlayerOrder.length > 0) {
-    // If the quitting player was the current player or before them in turn order
-    const quittingPlayerIndex = state.playerOrder.indexOf(playerId);
-    if (quittingPlayerIndex <= state.turnIndex) {
-      // Adjust turn index to point to the next valid player
+    const removedPlayerIndex = state.playerOrder.indexOf(playerId);
+    if (removedPlayerIndex <= state.turnIndex) {
       newTurnIndex = Math.max(0, state.turnIndex - 1);
-      // Make sure we don't go out of bounds
       if (newTurnIndex >= newPlayerOrder.length) {
         newTurnIndex = 0;
       }
     }
   }
-
-  // Clear neutral pieces if the quitting player had any
-  const newNeutralPieces = { ...state.neutralPieces };
-  // Note: We could also remove their permanent pieces, but that might be too disruptive
-  // For now, we'll keep their permanent pieces on the board
 
   // Remove the player's permanent pieces from the board
   const newPieces = { ...state.pieces };
@@ -483,8 +475,6 @@ export function quitGame(state: GameState, playerId: string): GameState {
     const column = Number(columnStr);
     newPieces[column] = pieces.filter((p) => p.playerId !== playerId);
   }
-
-  // Remove empty columns from pieces
   for (const [columnStr, pieces] of Object.entries(newPieces)) {
     const column = Number(columnStr);
     if (pieces.length === 0) {
@@ -492,13 +482,38 @@ export function quitGame(state: GameState, playerId: string): GameState {
     }
   }
 
+  // If the removed player was the current player, clear neutral pieces
+  const wasCurrentPlayer = state.playerOrder[state.turnIndex] === playerId;
+  const newNeutralPieces = wasCurrentPlayer ? {} : { ...state.neutralPieces };
+
   return {
     ...state,
     players: newPlayers,
     playerOrder: newPlayerOrder,
     turnIndex: newTurnIndex,
-    neutralPieces: newNeutralPieces,
     pieces: newPieces,
+    neutralPieces: newNeutralPieces,
+    message: undefined,
+  };
+}
+
+export function addPlayer(
+  state: GameState,
+  playerId: string,
+  color: string,
+  name: string,
+): GameState {
+  // Don't add if already present
+  if (state.players[playerId]) return state;
+  const newPlayers = { ...state.players, [playerId]: { color, name } };
+  let newPlayerOrder = [...state.playerOrder];
+  if (!newPlayerOrder.includes(playerId)) {
+    newPlayerOrder.push(playerId);
+  }
+  return {
+    ...state,
+    players: newPlayers,
+    playerOrder: newPlayerOrder,
     message: undefined,
   };
 }

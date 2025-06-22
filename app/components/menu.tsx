@@ -22,10 +22,13 @@ export function Menu({
   async function handleRemovePlayer(playerId: string) {
     if (!gameId) return;
     if (!window.confirm('Remove this player from the game?')) return;
-    await fetch('/api/pick-color', {
+    await fetch(`/game/${gameId}/action`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ removePlayerId: playerId, gameId }),
+      body: JSON.stringify({
+        intent: 'removePlayer',
+        parameters: { playerId },
+      }),
     });
   }
 

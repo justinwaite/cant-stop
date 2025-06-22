@@ -1,5 +1,8 @@
 import type { ActionFunctionArgs } from 'react-router';
-import {broadcastBoardState, readBoardState} from '~/utils/board-state.server';
+import {
+  broadcastBoardState,
+  readBoardState,
+} from '~/utils/board-state.server';
 import { getPlayerSession } from '~/utils/session.server';
 import { isValidGameCode } from '~/utils/game-code';
 import type { GameState } from '~/types';
@@ -9,7 +12,8 @@ import {
   hold,
   startGame,
   updatePlayerInfo,
-  quitGame,
+  addPlayer,
+  removePlayer,
 } from '~/utils/game-engine.server';
 
 // Type for the request body as a discriminated union
@@ -38,13 +42,29 @@ interface UpdatePlayerInfoAction {
 interface QuitGameAction {
   intent: 'quitGame';
 }
+interface AddPlayerAction {
+  intent: 'addPlayer';
+  parameters: {
+    playerId: string;
+    color: string;
+    name: string;
+  };
+}
+interface RemovePlayerAction {
+  intent: 'removePlayer';
+  parameters: {
+    playerId: string;
+  };
+}
 type GameActionRequest =
   | RollDiceAction
   | HoldAction
   | StartGameAction
   | ChoosePairsAction
   | UpdatePlayerInfoAction
-  | QuitGameAction;
+  | QuitGameAction
+  | AddPlayerAction
+  | RemovePlayerAction;
 
 export async function action({ request, params }: ActionFunctionArgs) {
   if (request.method !== 'POST') {
@@ -104,7 +124,18 @@ export async function action({ request, params }: ActionFunctionArgs) {
       );
       break;
     case 'quitGame':
-      newState = quitGame(prevState, playerSession.pid);
+      newState = removePlayer(prevState, playerSession.pid);
+      break;
+    case 'addPlayer':
+      newState = addPlayer(
+        prevState,
+        reqBody.parameters.playerId,
+        reqBody.parameters.color,
+        reqBody.parameters.name,
+      );
+      break;
+    case 'removePlayer':
+      newState = removePlayer(prevState, reqBody.parameters.playerId);
       break;
     default:
       return new Response(JSON.stringify({ error: 'Unknown intent' }), {

@@ -130,7 +130,8 @@ export function Board() {
       | 'choosePairs'
       | 'startGame'
       | 'updatePlayerInfo'
-      | 'quitGame',
+      | 'quitGame'
+      | 'addPlayer',
     parameters?: any,
   ) {
     const response = await fetch(`/game/${gameId}/action`, {
@@ -288,11 +289,7 @@ export function Board() {
       <ColorPicker
         onSelect={(color, name) => {
           if (!gameId) return;
-          fetch('/api/pick-color', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ color, name, gameId }),
-          });
+          sendIntent('addPlayer', { playerId: pid, color, name });
         }}
         takenColors={Object.values(players).map((p) => p.color)}
       />
