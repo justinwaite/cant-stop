@@ -23,21 +23,49 @@ export function ColorPicker({
   initialName = '',
   isEditing = false,
 }: ColorPickerProps) {
-  const [name, setName] = useState(initialName);
+  // Try to load from localStorage if not provided
+  const getInitialName = () => {
+    if (initialName) return initialName;
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('cantstop_name') || '';
+    }
+    return '';
+  };
+  const getInitialColor = () => {
+    if (initialColor) return initialColor;
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('cantstop_color') || null;
+    }
+    return null;
+  };
+
+  const [name, setName] = useState(getInitialName());
   const [selectedColor, setSelectedColor] = useState<string | null>(
-    initialColor,
+    getInitialColor(),
   );
 
-  // Update state when initial values change
+  // Update state when initial values change (for editing)
   useEffect(() => {
-    setName(initialName);
-    setSelectedColor(initialColor);
+    setName(initialName || getInitialName());
+    setSelectedColor(initialColor || getInitialColor());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialName, initialColor]);
 
   const canSubmit =
     name.trim().length > 0 &&
     selectedColor &&
     !takenColors.includes(selectedColor);
+
+  function handleSubmit() {
+    if (canSubmit && selectedColor) {
+      // Save to localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('cantstop_name', name.trim());
+        localStorage.setItem('cantstop_color', selectedColor);
+      }
+      onSelect(selectedColor, name.trim());
+    }
+  }
 
   return (
     <div
@@ -161,9 +189,7 @@ export function ColorPicker({
           })}
         </div>
         <button
-          onClick={() =>
-            canSubmit && selectedColor && onSelect(selectedColor, name.trim())
-          }
+          onClick={handleSubmit}
           disabled={!canSubmit}
           style={{
             fontSize: 16,

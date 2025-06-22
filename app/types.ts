@@ -15,4 +15,6 @@ export interface GameState {
   neutralPieces: Record<string, number>; // number (column) -> slot index
   winner?: string;
   message?: string; // Message to show to the current player
+  nextGame?: string; // ID of the next game if created
+  nextGameCreator?: string; // Player ID of who created the next game
 }

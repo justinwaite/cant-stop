@@ -14,6 +14,7 @@ import {
   updatePlayerInfo,
   addPlayer,
   removePlayer,
+  startNextGame,
 } from '~/utils/game-engine.server';
 
 // Type for the request body as a discriminated union
@@ -56,6 +57,9 @@ interface RemovePlayerAction {
     playerId: string;
   };
 }
+interface StartNextGameAction {
+  intent: 'startNextGame';
+}
 type GameActionRequest =
   | RollDiceAction
   | HoldAction
@@ -64,7 +68,8 @@ type GameActionRequest =
   | UpdatePlayerInfoAction
   | QuitGameAction
   | AddPlayerAction
-  | RemovePlayerAction;
+  | RemovePlayerAction
+  | StartNextGameAction;
 
 export async function action({ request, params }: ActionFunctionArgs) {
   if (request.method !== 'POST') {
@@ -137,6 +142,11 @@ export async function action({ request, params }: ActionFunctionArgs) {
     case 'removePlayer':
       newState = removePlayer(prevState, reqBody.parameters.playerId);
       break;
+    case 'startNextGame': {
+      const result = startNextGame(prevState, playerSession.pid);
+      newState = result.updatedState;
+      break;
+    }
     default:
       return new Response(JSON.stringify({ error: 'Unknown intent' }), {
         status: 400,

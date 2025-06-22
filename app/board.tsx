@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useRouteLoaderData } from 'react-router';
+import { useParams, useRouteLoaderData, useNavigate } from 'react-router';
 import './app.css';
 import type { GameState } from './types';
 import { usePlayerSession } from '~/utils/use-player-session';
@@ -87,6 +87,7 @@ export function Board() {
     gameId: string;
     gameState: GameState;
   };
+  const navigate = useNavigate();
 
   // Store the latest game state from the server
   const [gameState, setGameState] = useState<GameState | null>(
@@ -105,6 +106,9 @@ export function Board() {
   const [showBustPopup, setShowBustPopup] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
 
+  // Add local state for next game button
+  const [startingNextGame, setStartingNextGame] = useState(false);
+
   // SSE: Listen for board state updates
   useEffect(() => {
     if (!gameId) return;
@@ -122,6 +126,17 @@ export function Board() {
     return () => evtSource.close();
   }, [gameId]);
 
+  // Redirect to next game if I'm the creator and nextGame is set
+  useEffect(() => {
+    if (
+      gameState?.nextGame &&
+      gameState?.nextGameCreator === pid &&
+      gameId !== gameState.nextGame
+    ) {
+      navigate(`/game/${gameState.nextGame}`);
+    }
+  }, [gameState?.nextGame, gameState?.nextGameCreator, pid, gameId, navigate]);
+
   // Intent-sending functions
   async function sendIntent(
     intent:
@@ -131,7 +146,8 @@ export function Board() {
       | 'startGame'
       | 'updatePlayerInfo'
       | 'quitGame'
-      | 'addPlayer',
+      | 'addPlayer'
+      | 'startNextGame',
     parameters?: any,
   ) {
     const response = await fetch(`/game/${gameId}/action`, {
@@ -617,8 +633,31 @@ export function Board() {
         )}
 
         {winner ? (
-          <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-            {gameState.players[winner]?.name || winner} wins!
+          <div className="flex flex-col items-center gap-2">
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+              {gameState.players[winner]?.name || winner} wins!
+            </div>
+            {/* Next game logic */}
+            {!gameState.nextGame ? (
+              <button
+                className="mt-2 px-6 py-2 rounded bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors text-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
+                onClick={async () => {
+                  setStartingNextGame(true);
+                  await sendIntent('startNextGame');
+                  setStartingNextGame(false);
+                }}
+                disabled={startingNextGame}
+              >
+                Start New Game
+              </button>
+            ) : gameState.nextGame && gameState.nextGameCreator !== pid ? (
+              <a
+                href={`/game/${gameState.nextGame}`}
+                className="mt-2 px-6 py-2 rounded bg-green-600 text-white font-bold hover:bg-green-700 transition-colors text-lg"
+              >
+                Join Next Game
+              </a>
+            ) : null}
           </div>
         ) : isMyTurn && phase === 'rolling' ? (
           <div className="flex gap-2">

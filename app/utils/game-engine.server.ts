@@ -1,5 +1,6 @@
 // Server-side game engine for Can't Stop
 import type { GameState, GamePhase } from '~/types';
+import { generateGameCode } from '~/utils/game-code';
 
 // Utility to get the current player's ID
 function getCurrentPlayerId(state: GameState): string {
@@ -516,4 +517,18 @@ export function addPlayer(
     playerOrder: newPlayerOrder,
     message: undefined,
   };
+}
+
+export function startNextGame(state: GameState, playerId: string) {
+  if (state.nextGame) {
+    // Already started
+    return { updatedState: state, newGameId: state.nextGame };
+  }
+  const newGameId = generateGameCode();
+  const updatedState: GameState = {
+    ...state,
+    nextGame: newGameId,
+    nextGameCreator: playerId,
+  };
+  return { updatedState, newGameId };
 }
