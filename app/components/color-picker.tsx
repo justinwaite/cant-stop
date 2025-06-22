@@ -27,14 +27,14 @@ export function ColorPicker({
   const getInitialName = () => {
     if (initialName) return initialName;
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('cantstop_name') || '';
+      return localStorage.getItem('peakpursuit_name') || '';
     }
     return '';
   };
   const getInitialColor = () => {
     if (initialColor) return initialColor;
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('cantstop_color') || null;
+      return localStorage.getItem('peakpursuit_color') || null;
     }
     return null;
   };
@@ -60,8 +60,8 @@ export function ColorPicker({
     if (canSubmit && selectedColor) {
       // Save to localStorage
       if (typeof window !== 'undefined') {
-        localStorage.setItem('cantstop_name', name.trim());
-        localStorage.setItem('cantstop_color', selectedColor);
+        localStorage.setItem('peakpursuit_name', name.trim());
+        localStorage.setItem('peakpursuit_color', selectedColor);
       }
       onSelect(selectedColor, name.trim());
     }
@@ -75,7 +75,7 @@ export function ColorPicker({
         left: 0,
         width: '100vw',
         height: '100vh',
-        background: 'rgba(0,0,0,0.5)',
+        background: 'rgba(132,38,22,0.28)', // warm brown overlay
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -86,10 +86,12 @@ export function ColorPicker({
     >
       <div
         style={{
-          background: '#fff',
+          background: '#FBF0E3',
+          border: '2px solid #E85E37',
+          borderRadius: 18,
+          boxShadow: '0 4px 24px rgba(132,38,22,0.13)',
+          color: '#842616',
           padding: 32,
-          borderRadius: 16,
-          boxShadow: '0 4px 32px rgba(0,0,0,0.15)',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -100,7 +102,14 @@ export function ColorPicker({
           marginRight: 'auto',
         }}
       >
-        <div style={{ fontWeight: 'bold', fontSize: 20, marginBottom: 8 }}>
+        <div
+          style={{
+            fontWeight: 'bold',
+            fontSize: 20,
+            marginBottom: 8,
+            color: '#842616',
+          }}
+        >
           {isEditing ? 'Edit your color & name' : 'Pick your color & name'}
         </div>
         <input
@@ -112,14 +121,14 @@ export function ColorPicker({
             fontSize: 16,
             padding: '8px 12px',
             borderRadius: 8,
-            border: '1px solid #bbb',
+            border: '1px solid #E2BFA3',
             marginBottom: 12,
             width: '100%',
-            background: 'var(--input-bg, #fff)',
-            color: 'var(--input-color, #222)',
+            background: '#FFF',
+            color: '#842616',
+            fontWeight: 500,
           }}
           maxLength={20}
-          className="dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400"
         />
         <div
           style={{
@@ -151,39 +160,41 @@ export function ColorPicker({
                     background: color,
                     border:
                       selectedColor === color
-                        ? '3px solid #222'
-                        : '2px solid #bbb',
+                        ? '3px solid #E85E37'
+                        : '2px solid #E2BFA3',
                     borderRadius: 8,
                     cursor: taken ? 'not-allowed' : 'pointer',
                     overflow: 'hidden',
-                    ...(taken ? { background: `${color}66` } : {}),
+                    opacity: taken ? 0.5 : 1,
+                    position: 'relative',
                   }}
                   aria-label={`Pick color ${color}`}
-                ></button>
-                {taken && (
-                  <svg
-                    width="44"
-                    height="44"
-                    viewBox="0 0 44 44"
-                    style={{
-                      position: 'absolute',
-                      top: -2,
-                      left: -2,
-                      pointerEvents: 'none',
-                    }}
-                  >
-                    <line
-                      x1="0"
-                      y1="0"
-                      x2="44"
-                      y2="44"
-                      stroke="#000"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                      opacity="1"
-                    />
-                  </svg>
-                )}
+                >
+                  {taken && (
+                    <svg
+                      width="44"
+                      height="44"
+                      viewBox="0 0 44 44"
+                      style={{
+                        position: 'absolute',
+                        top: -2,
+                        left: -2,
+                        pointerEvents: 'none',
+                      }}
+                    >
+                      <line
+                        x1="0"
+                        y1="0"
+                        x2="44"
+                        y2="44"
+                        stroke="#B98A68"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        opacity="1"
+                      />
+                    </svg>
+                  )}
+                </button>
               </div>
             );
           })}
@@ -196,11 +207,18 @@ export function ColorPicker({
             padding: '8px 24px',
             borderRadius: 8,
             border: 'none',
-            background: canSubmit ? '#2563eb' : '#bbb',
-            color: '#fff',
+            background: canSubmit ? '#E85E37' : '#F5E4D5',
+            color: canSubmit ? '#FBF0E3' : '#B98A68',
             fontWeight: 'bold',
             cursor: canSubmit ? 'pointer' : 'not-allowed',
             marginTop: 8,
+            transition: 'background 0.2s',
+          }}
+          onMouseOver={(e) => {
+            if (canSubmit) e.currentTarget.style.background = '#DF4A2B';
+          }}
+          onMouseOut={(e) => {
+            if (canSubmit) e.currentTarget.style.background = '#E85E37';
           }}
         >
           {isEditing ? 'Update' : 'Join Game'}

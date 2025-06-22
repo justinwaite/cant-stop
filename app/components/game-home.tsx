@@ -36,15 +36,32 @@ export function GameHome() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg dark:shadow-black/20 p-8">
+    <div
+      className="min-h-screen flex items-center justify-center p-4"
+      style={{
+        background: 'linear-gradient(180deg, #E85E37 0%, #F08B4C 100%)',
+      }}
+    >
+      <div
+        className="max-w-md w-full rounded-lg shadow-lg p-8"
+        style={{ background: '#FBF0E3' }}
+      >
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Can't Stop
-          </h1>
-          <p className="text-gray-600 dark:text-gray-300">
-            Create a new game or join an existing one
-          </p>
+          <div className="flex justify-center mb-2">
+            <img
+              src="/icon.svg"
+              alt="Peak Pursuit logo"
+              style={{
+                width: 144,
+                height: 144,
+                borderRadius: 24,
+                background: '#FFF',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
+                border: '2px solid #E2BFA3',
+                objectFit: 'cover',
+              }}
+            />
+          </div>
         </div>
 
         <div className="space-y-6">
@@ -52,7 +69,15 @@ export function GameHome() {
           <div>
             <button
               onClick={handleCreateGame}
-              className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg transition-colors"
+              className="w-full font-bold py-3 px-4 rounded-lg transition-colors"
+              style={{
+                background: '#E85E37',
+                color: '#FBF0E3',
+              }}
+              onMouseOver={(e) =>
+                (e.currentTarget.style.background = '#DF4A2B')
+              }
+              onMouseOut={(e) => (e.currentTarget.style.background = '#E85E37')}
             >
               Create New Game
             </button>
@@ -61,10 +86,20 @@ export function GameHome() {
           {/* Divider */}
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300 dark:border-gray-600" />
+              <div
+                className="w-full border-t"
+                style={{ borderColor: '#E2BFA3' }}
+              />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+              <span
+                className="px-2"
+                style={{
+                  background: '#FBF0E3',
+                  color: '#842616',
+                  opacity: 0.7,
+                }}
+              >
                 or join existing game
               </span>
             </div>
@@ -75,7 +110,8 @@ export function GameHome() {
             <div>
               <label
                 htmlFor="gameCode"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                className="block text-sm font-medium mb-2"
+                style={{ color: '#842616' }}
               >
                 Game Code
               </label>
@@ -89,18 +125,34 @@ export function GameHome() {
                 }}
                 onKeyPress={handleKeyPress}
                 placeholder="Enter 5-letter code"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2"
+                style={{
+                  border: '1px solid #F5E4D5',
+                  background: '#FFF',
+                  color: '#842616',
+                  fontWeight: 500,
+                }}
                 maxLength={5}
               />
             </div>
 
             {error && (
-              <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
+              <p style={{ color: '#DF4A2B' }} className="text-sm">
+                {error}
+              </p>
             )}
 
             <button
               onClick={handleJoinGame}
-              className="w-full bg-gray-600 hover:bg-gray-700 dark:bg-gray-500 dark:hover:bg-gray-600 text-white font-bold py-3 px-4 rounded-lg transition-colors"
+              className="w-full font-bold py-3 px-4 rounded-lg transition-colors"
+              style={{
+                background: '#842616',
+                color: '#FBF0E3',
+              }}
+              onMouseOver={(e) =>
+                (e.currentTarget.style.background = '#DF4A2B')
+              }
+              onMouseOut={(e) => (e.currentTarget.style.background = '#842616')}
             >
               Join Game
             </button>

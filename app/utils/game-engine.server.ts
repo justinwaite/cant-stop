@@ -1,6 +1,7 @@
-// Server-side game engine for Can't Stop
+// Server-side game engine for Peak Pursuit
 import type { GameState, GamePhase } from '~/types';
 import { generateGameCode } from '~/utils/game-code';
+import crypto from 'node:crypto';
 
 // Utility to get the current player's ID
 function getCurrentPlayerId(state: GameState): string {
@@ -64,10 +65,7 @@ export function rollDice(state: GameState, playerId: string): GameState {
     return state;
   }
   // Generate 4 dice
-  const dice = Array.from(
-    { length: 4 },
-    () => Math.floor(Math.random() * 6) + 1,
-  );
+  const dice = Array.from({ length: 4 }, () => crypto.randomInt(1, 7));
   // Check for valid pairs
   if (!hasValidPair(state, dice)) {
     // Bust! Advance turn
@@ -288,9 +286,9 @@ export function choosePairs(
   };
 }
 
-// Helper: Get the top slot for a column (Can't Stop columns are 2-12)
+// Helper: Get the top slot for a column (Peak Pursuit columns are 2-12)
 function getTopSlotForColumn(col: number): number {
-  // Standard Can't Stop board: columns 2-12, with varying heights
+  // Standard Peak Pursuit board: columns 2-12, with varying heights
   const columnHeights: Record<number, number> = {
     2: 3,
     3: 5,

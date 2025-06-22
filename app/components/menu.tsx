@@ -52,7 +52,15 @@ export function Menu({
       {/* Menu button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed top-4 left-4 z-50 bg-white dark:bg-black border-2 border-gray-700 dark:border-white text-gray-700 dark:text-white rounded-lg p-2 cursor-pointer shadow-lg dark:shadow-white/20 flex items-center justify-center w-10 h-10"
+        className="fixed top-4 left-4 z-50 flex items-center justify-center w-10 h-10 p-2 cursor-pointer"
+        style={{
+          background: '#FBF0E3',
+          border: '2px solid #E85E37',
+          color: '#842616',
+          borderRadius: 12,
+          boxShadow: '0 2px 8px rgba(132,38,22,0.10)',
+          transition: 'background 0.2s, border 0.2s',
+        }}
         aria-label="Menu"
       >
         <svg
@@ -60,7 +68,7 @@ export function Menu({
           height="20"
           viewBox="0 0 24 24"
           fill="none"
-          stroke="currentColor"
+          stroke="#842616"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -81,17 +89,37 @@ export function Menu({
           />
 
           {/* Menu content */}
-          <div className="fixed top-18 left-4 z-50 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-600 rounded-lg shadow-lg dark:shadow-black/50 min-w-40 overflow-hidden">
+          <div
+            className="fixed top-18 left-4 z-50 min-w-40 overflow-hidden"
+            style={{
+              background: 'rgba(251,240,227,0.97)',
+              border: '2px solid #E85E37',
+              borderRadius: 16,
+              boxShadow: '0 4px 24px rgba(132,38,22,0.13)',
+              color: '#842616',
+              fontWeight: 500,
+            }}
+          >
             <button
               onClick={handleCopyGameUrl}
-              className="w-full px-4 py-3 bg-none border-none text-left cursor-pointer text-sm text-gray-700 dark:text-gray-200 border-b border-gray-200 dark:border-gray-600 flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="w-full px-4 py-3 bg-none border-none text-left cursor-pointer text-sm flex items-center gap-2 border-b"
+              style={{
+                borderColor: '#E2BFA3',
+                color: '#842616',
+                background: 'none',
+                transition: 'background 0.2s',
+              }}
+              onMouseOver={(e) =>
+                (e.currentTarget.style.background = 'rgba(240,139,76,0.20)')
+              }
+              onMouseOut={(e) => (e.currentTarget.style.background = 'none')}
             >
               <svg
                 width="16"
                 height="16"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="currentColor"
+                stroke="#842616"
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -106,14 +134,24 @@ export function Menu({
                 setShowPlayers(true);
                 setIsOpen(false);
               }}
-              className="w-full px-4 py-3 bg-none border-none text-left cursor-pointer text-sm text-gray-700 dark:text-gray-200 border-b border-gray-200 dark:border-gray-600 flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="w-full px-4 py-3 bg-none border-none text-left cursor-pointer text-sm flex items-center gap-2 border-b"
+              style={{
+                borderColor: '#E2BFA3',
+                color: '#842616',
+                background: 'none',
+                transition: 'background 0.2s',
+              }}
+              onMouseOver={(e) =>
+                (e.currentTarget.style.background = 'rgba(240,139,76,0.20)')
+              }
+              onMouseOut={(e) => (e.currentTarget.style.background = 'none')}
             >
               <svg
                 width="16"
                 height="16"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="currentColor"
+                stroke="#842616"
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -128,14 +166,23 @@ export function Menu({
                 onChangeColor();
                 setIsOpen(false);
               }}
-              className="w-full px-4 py-3 bg-none border-none text-left cursor-pointer text-sm text-gray-700 dark:text-gray-200 flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="w-full px-4 py-3 bg-none border-none text-left cursor-pointer text-sm flex items-center gap-2"
+              style={{
+                color: '#842616',
+                background: 'none',
+                transition: 'background 0.2s',
+              }}
+              onMouseOver={(e) =>
+                (e.currentTarget.style.background = 'rgba(240,139,76,0.20)')
+              }
+              onMouseOut={(e) => (e.currentTarget.style.background = 'none')}
             >
               <svg
                 width="16"
                 height="16"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="currentColor"
+                stroke="#842616"
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -150,14 +197,24 @@ export function Menu({
             </button>
             <button
               onClick={handleExitGame}
-              className="w-full px-4 py-3 bg-none border-none text-left cursor-pointer text-sm text-gray-700 dark:text-gray-200 flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-t border-gray-200 dark:border-gray-600"
+              className="w-full px-4 py-3 bg-none border-none text-left cursor-pointer text-sm flex items-center gap-2 border-t"
+              style={{
+                borderColor: '#E2BFA3',
+                color: '#842616',
+                background: 'none',
+                transition: 'background 0.2s',
+              }}
+              onMouseOver={(e) =>
+                (e.currentTarget.style.background = 'rgba(240,139,76,0.20)')
+              }
+              onMouseOut={(e) => (e.currentTarget.style.background = 'none')}
             >
               <svg
                 width="16"
                 height="16"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="currentColor"
+                stroke="#842616"
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -180,47 +237,122 @@ export function Menu({
             onClick={() => setShowPlayers(false)}
           />
           <div
-            className="fixed top-1/2 left-1/2 z-50 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-300 dark:border-gray-700 p-6 min-w-[260px] min-h-[120px] flex flex-col items-center max-w-sm w-full"
-            style={{ transform: 'translate(-50%, -50%)' }}
+            className="fixed top-1/2 left-1/2 z-50 flex flex-col items-center max-w-sm w-full"
+            style={{
+              background: '#FBF0E3',
+              border: '2px solid #E85E37',
+              borderRadius: 18,
+              boxShadow: '0 4px 24px rgba(132,38,22,0.13)',
+              color: '#842616',
+              padding: 32,
+              minWidth: 260,
+              minHeight: 120,
+              transform: 'translate(-50%, -50%)',
+            }}
           >
-            <div className="font-bold text-lg mb-4">Players</div>
+            <div
+              className="font-bold text-lg mb-4"
+              style={{ color: '#842616' }}
+            >
+              Players
+            </div>
             <ul className="w-full">
               {Object.entries(players).length === 0 && (
-                <li className="text-gray-500 text-center">No players yet</li>
-              )}
-              {Object.entries(players).map(([playerId, player]) => (
                 <li
-                  key={playerId}
-                  className="flex items-center gap-3 mb-2 justify-between"
+                  style={{
+                    color: '#B98A68',
+                    textAlign: 'center',
+                    fontWeight: 500,
+                  }}
                 >
-                  <span
-                    style={{
-                      display: 'inline-block',
-                      width: 18,
-                      height: 18,
-                      borderRadius: 6,
-                      background: player.color,
-                      border: '2px solid #bbb',
-                    }}
-                  />
-                  <span className="font-mono text-base text-gray-800 dark:text-gray-100 flex-1 ml-2">
-                    {player.name}
-                  </span>
-                  {playerId !== pid && (
-                    <button
-                      onClick={() => handleRemovePlayer(playerId)}
-                      className="px-2 py-1 rounded bg-red-500 text-white text-xs font-bold hover:bg-red-700 transition-colors ml-auto"
-                      type="button"
-                    >
-                      Remove
-                    </button>
-                  )}
+                  No players yet
                 </li>
-              ))}
+              )}
+              {Object.entries(players).map(([playerId, player]) => {
+                const isCurrent = playerId === pid;
+                return (
+                  <li
+                    key={playerId}
+                    style={{
+                      color: '#842616',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 12,
+                      marginBottom: 8,
+                      justifyContent: 'flex-start',
+                      fontWeight: 500,
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        width: 18,
+                        height: 18,
+                        borderRadius: 8,
+                        background: player.color,
+                        border: '2px solid #bbb',
+                      }}
+                    />
+                    <span style={{ color: '#842616', fontWeight: 500 }}>
+                      {player.name}
+                    </span>
+                    {!isCurrent && <span style={{ flex: 1 }} />}
+                    {!isCurrent && (
+                      <button
+                        onClick={() => handleRemovePlayer(playerId)}
+                        style={{
+                          color: '#DF4A2B',
+                          background: '#FBF0E3',
+                          border: '2px solid #E85E37',
+                          borderRadius: 8,
+                          padding: '2px 14px',
+                          cursor: 'pointer',
+                          fontWeight: 700,
+                          fontSize: 14,
+                          boxShadow: '0 1px 4px rgba(132,38,22,0.07)',
+                          transition:
+                            'background 0.2s, border 0.2s, color 0.2s',
+                        }}
+                        onMouseOver={(e) => {
+                          e.currentTarget.style.background = '#F08B4C';
+                          e.currentTarget.style.border = '2px solid #DF4A2B';
+                          e.currentTarget.style.color = '#842616';
+                        }}
+                        onMouseOut={(e) => {
+                          e.currentTarget.style.background = '#FBF0E3';
+                          e.currentTarget.style.border = '2px solid #E85E37';
+                          e.currentTarget.style.color = '#DF4A2B';
+                        }}
+                        title="Remove player"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
             <button
               onClick={() => setShowPlayers(false)}
-              className="mt-4 px-4 py-1.5 rounded bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors"
+              style={{
+                marginTop: 16,
+                padding: '8px 24px',
+                borderRadius: 8,
+                background: '#E85E37',
+                border: 'none',
+                color: '#FBF0E3',
+                fontWeight: 700,
+                fontSize: 16,
+                boxShadow: '0 1px 4px rgba(132,38,22,0.07)',
+                transition: 'background 0.2s',
+                cursor: 'pointer',
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.background = '#DF4A2B';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.background = '#E85E37';
+              }}
             >
               Close
             </button>

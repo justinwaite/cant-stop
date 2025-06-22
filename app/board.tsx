@@ -12,7 +12,17 @@ const maxSlots = 13;
 const boardHeight = maxSlots * (slotSize + slotGap) - slotGap;
 
 // Dice component for rendering a die face with pips
-function Dice({ value, size = 40 }: { value: number; size?: number }) {
+function Dice({
+  value,
+  size = 40,
+  color = '#DF4A2B',
+  border = '#E2BFA3',
+}: {
+  value: number;
+  size?: number;
+  color?: string;
+  border?: string;
+}) {
   // Pip positions for each die face (1-based index)
   const pips = [
     [],
@@ -53,13 +63,14 @@ function Dice({ value, size = 40 }: { value: number; size?: number }) {
       style={{
         width: size,
         height: size,
-        background: '#fff',
-        border: '2px solid #2563eb',
+        background: 'rgba(255,255,255,0.95)',
+        border: `2px solid ${border}`,
         borderRadius: 8,
         display: 'grid',
         gridTemplateRows: 'repeat(3, 1fr)',
         gridTemplateColumns: 'repeat(3, 1fr)',
         position: 'relative',
+        boxShadow: '0 2px 8px rgba(132,38,22,0.07)',
       }}
     >
       {pips[value].map(([row, col], i) => (
@@ -70,7 +81,7 @@ function Dice({ value, size = 40 }: { value: number; size?: number }) {
             gridColumn: col + 1,
             width: size / 6,
             height: size / 6,
-            background: '#2563eb',
+            background: color,
             borderRadius: '50%',
             margin: 'auto',
           }}
@@ -324,21 +335,76 @@ export function Board() {
         ? `${window.location.origin}/game/${gameId}`
         : '';
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-white dark:bg-gray-900">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-300 dark:border-gray-700 p-8 min-w-[320px] flex flex-col items-center md:min-w-lg">
+      <div
+        className="flex flex-col items-center justify-center min-h-screen"
+        style={{
+          background: 'linear-gradient(180deg, #E85E37 0%, #F08B4C 100%)',
+        }}
+      >
+        <div
+          style={{
+            background: '#FBF0E3',
+            border: '2px solid #E85E37',
+            borderRadius: 18,
+            boxShadow: '0 4px 24px rgba(132,38,22,0.13)',
+            color: '#842616',
+            padding: 32,
+            minWidth: 320,
+            maxWidth: 400,
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+          }}
+        >
           <div className="w-full flex flex-col items-center mb-4">
-            <div className="font-semibold mb-1 text-lg">Game Link</div>
+            <div
+              style={{
+                color: '#842616',
+                fontWeight: 700,
+                fontSize: 18,
+                marginBottom: 4,
+              }}
+            >
+              Game Link
+            </div>
             <div className="flex items-center gap-2 w-full">
               <input
                 type="text"
                 value={gameUrl}
                 readOnly
-                className="w-full px-2 py-1 rounded border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 font-mono text-sm"
-                style={{ minWidth: 0 }}
+                style={{
+                  width: '100%',
+                  padding: '6px 8px',
+                  borderRadius: 8,
+                  border: '1px solid #E2BFA3',
+                  background: '#FFF',
+                  color: '#842616',
+                  fontWeight: 500,
+                  fontFamily: 'monospace',
+                  fontSize: 14,
+                  minWidth: 0,
+                }}
               />
               <button
                 onClick={() => handleCopy(gameUrl)}
-                className="px-2 py-1 rounded bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors text-sm"
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: 8,
+                  background: '#E85E37',
+                  color: '#FBF0E3',
+                  fontWeight: 700,
+                  fontSize: 14,
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'background 0.2s',
+                }}
+                onMouseOver={(e) =>
+                  (e.currentTarget.style.background = '#DF4A2B')
+                }
+                onMouseOut={(e) =>
+                  (e.currentTarget.style.background = '#E85E37')
+                }
                 type="button"
               >
                 {copied ? 'Copied!' : 'Copy'}
@@ -346,10 +412,27 @@ export function Board() {
             </div>
           </div>
           <div className="mb-4 w-full">
-            <div className="font-semibold mb-2 text-lg">Players</div>
+            <div
+              style={{
+                color: '#842616',
+                fontWeight: 700,
+                fontSize: 18,
+                marginBottom: 8,
+              }}
+            >
+              Players
+            </div>
             <ul className="w-full">
               {Object.entries(players).length === 0 && (
-                <li className="text-gray-500 text-center">No players yet</li>
+                <li
+                  style={{
+                    color: '#B98A68',
+                    textAlign: 'center',
+                    fontWeight: 500,
+                  }}
+                >
+                  No players yet
+                </li>
               )}
               {Object.entries(players).map(([playerId, player]) => (
                 <li key={playerId} className="flex items-center gap-3 mb-2">
@@ -360,10 +443,17 @@ export function Board() {
                       height: 22,
                       borderRadius: 8,
                       background: player.color,
-                      border: '2px solid #bbb',
+                      border: '2px solid #E2BFA3',
                     }}
                   />
-                  <span className="font-mono text-lg text-gray-800 dark:text-gray-100">
+                  <span
+                    style={{
+                      color: '#842616',
+                      fontWeight: 600,
+                      fontSize: 16,
+                      fontFamily: 'monospace',
+                    }}
+                  >
                     {player.name}
                   </span>
                 </li>
@@ -372,12 +462,47 @@ export function Board() {
           </div>
           <button
             onClick={() => sendIntent('startGame')}
-            className="mt-2 px-6 py-2 rounded bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors text-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
+            style={{
+              marginTop: 8,
+              padding: '10px 32px',
+              borderRadius: 8,
+              background:
+                Object.values(players).length >= 2 && !started
+                  ? '#E85E37'
+                  : '#F5E4D5',
+              color:
+                Object.values(players).length >= 2 && !started
+                  ? '#FBF0E3'
+                  : '#B98A68',
+              fontWeight: 700,
+              fontSize: 18,
+              border: 'none',
+              cursor:
+                Object.values(players).length >= 2 && !started
+                  ? 'pointer'
+                  : 'not-allowed',
+              transition: 'background 0.2s',
+            }}
+            onMouseOver={(e) => {
+              if (Object.values(players).length >= 2 && !started)
+                e.currentTarget.style.background = '#DF4A2B';
+            }}
+            onMouseOut={(e) => {
+              if (Object.values(players).length >= 2 && !started)
+                e.currentTarget.style.background = '#E85E37';
+            }}
             disabled={Object.values(players).length < 2 || started}
           >
             Start Game
           </button>
-          <div className="mt-2 text-gray-500 text-sm">
+          <div
+            style={{
+              marginTop: 8,
+              color: '#B98A68',
+              fontSize: 14,
+              fontWeight: 500,
+            }}
+          >
             Waiting for players... (min 2 to start)
           </div>
         </div>
@@ -385,7 +510,7 @@ export function Board() {
     );
   }
 
-  // Board column slot counts for Can't Stop (columns 2-12)
+  // Board column slot counts for Peak Pursuit (columns 2-12)
   const columnSlotCounts = {
     2: 3,
     3: 5,
@@ -410,11 +535,25 @@ export function Board() {
   // Only show actions that are valid for the current player and phase
 
   return (
-    <div className="flex flex-col overflow-hidden" style={{ height: '100dvh' }}>
+    <div
+      className="flex flex-col overflow-hidden"
+      style={{
+        height: '100dvh',
+        background: 'linear-gradient(180deg, #E85E37 0%, #F08B4C 100%)',
+      }}
+    >
       {/* Game ID display */}
       <div
-        className="fixed top-4 left-20 z-40 px-3 py-1 rounded-lg bg-white/90 dark:bg-gray-900/90 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 font-mono font-bold text-lg shadow"
-        style={{ letterSpacing: '0.15em', minWidth: 90, textAlign: 'center' }}
+        className="fixed top-4 left-20 z-40 px-3 py-1 rounded-lg shadow"
+        style={{
+          background: '#FBF0E3',
+          border: '2px solid #E2BFA3',
+          color: '#842616',
+          letterSpacing: '0.15em',
+          minWidth: 90,
+          textAlign: 'center',
+          fontWeight: 700,
+        }}
       >
         {gameId}
       </div>
@@ -433,7 +572,13 @@ export function Board() {
 
       {/* Turn indicator (top right) */}
       {started && playerOrder.length > 0 && (
-        <div className="fixed top-4 right-4 z-40 flex items-center gap-2 px-3 py-1 rounded-lg bg-white/90 dark:bg-gray-900/90 border border-gray-300 dark:border-gray-700 shadow">
+        <div
+          className="fixed top-4 right-4 z-40 flex items-center gap-2 px-3 py-1 rounded-lg shadow"
+          style={{
+            background: '#FBF0E3',
+            border: '2px solid #E2BFA3',
+          }}
+        >
           <span
             style={{
               display: 'inline-block',
@@ -444,10 +589,16 @@ export function Board() {
               border: '2px solid #bbb',
             }}
           />
-          <span className="font-mono text-base text-gray-800 dark:text-gray-100 font-bold">
+          <span
+            style={{ color: '#842616', fontWeight: 700 }}
+            className="font-mono text-base"
+          >
             {players[playerOrder[turnIndex]]?.name || '...'}
           </span>
-          <span className="text-xs text-blue-700 dark:text-blue-300 font-semibold ml-1">
+          <span
+            style={{ color: '#DF4A2B' }}
+            className="text-xs font-semibold ml-1"
+          >
             TURN
           </span>
         </div>
@@ -455,7 +606,15 @@ export function Board() {
 
       {/* Message display for current player */}
       {isMyTurn && gameState.message && (
-        <div className="fixed top-16 right-4 z-40 px-4 py-2 rounded-lg bg-red-100 dark:bg-red-900/90 border border-red-300 dark:border-red-700 text-red-800 dark:text-red-200 font-medium text-sm shadow max-w-xs">
+        <div
+          className="fixed top-16 right-4 z-40 px-4 py-2 rounded-lg shadow max-w-xs"
+          style={{
+            background: '#F5E4D5',
+            border: '2px solid #E2BFA3',
+            color: '#842616',
+            fontWeight: 500,
+          }}
+        >
           {gameState.message}
         </div>
       )}
@@ -463,7 +622,10 @@ export function Board() {
       {/* Bust popup */}
       {showBustPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-red-600 text-white px-8 py-6 rounded-lg shadow-lg text-4xl font-bold animate-pulse">
+          <div
+            className="px-8 py-6 rounded-lg shadow-lg text-4xl font-bold animate-pulse"
+            style={{ background: '#DF4A2B', color: '#FBF0E3' }}
+          >
             BUST!
           </div>
         </div>
@@ -533,16 +695,20 @@ export function Board() {
                         style={{
                           width: slotSize,
                           height: slotSize,
-                          background: '#eee',
-                          border: '2px solid #bbb',
+                          background: '#F5E4D5',
+                          border: '2px solid #E2BFA3',
+                          borderRadius: 8,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           fontWeight: isTop ? 'bold' : undefined,
                           fontSize: isTop ? 18 : undefined,
-                          color: '#222',
+                          color: '#842616',
                           position: 'relative',
                           marginBottom: 0,
+                          boxShadow: isTop
+                            ? '0 2px 8px rgba(132,38,22,0.07)'
+                            : undefined,
                         }}
                       >
                         {isTop ? col : null}
@@ -553,8 +719,8 @@ export function Board() {
                               key={piece.playerId}
                               style={{
                                 position: 'absolute',
-                                top: 4 + i * 8,
-                                left: 4,
+                                top: 2 + i * 8,
+                                left: 2,
                                 width: 24,
                                 height: 24,
                                 background: getColorFromPlayerId(
@@ -562,6 +728,7 @@ export function Board() {
                                 ),
                                 borderRadius: 6,
                                 zIndex: 1,
+                                border: '1px solid #FBF0E3',
                               }}
                             />
                           ))}
@@ -570,13 +737,14 @@ export function Board() {
                           <div
                             style={{
                               position: 'absolute',
-                              top: 8,
-                              left: 8,
+                              top: '50%',
+                              left: '50%',
+                              transform: 'translate(-50%, -50%)',
                               width: slotSize - 16,
                               height: slotSize - 16,
-                              background: '#888',
-                              border: '2px solid #bbb',
-                              borderRadius: 6,
+                              background: '#E2BFA3',
+                              border: '2px solid #B98A68',
+                              borderRadius: '50%',
                               zIndex: 2,
                             }}
                           />
@@ -591,6 +759,7 @@ export function Board() {
                                 gameState.lockedColumns[col],
                               ),
                               zIndex: 10,
+                              borderRadius: 8,
                             }}
                           />
                         )}
@@ -606,28 +775,50 @@ export function Board() {
 
       {/* Action Bar - pushed to bottom */}
       <div
-        className="w-screen bg-white/95 dark:bg-gray-900/95 border-t border-gray-200 dark:border-gray-700 shadow-lg dark:shadow-black/20 py-3 pb-5 flex flex-col items-center gap-2"
-        style={{ paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom))' }}
+        className="w-screen shadow-lg py-3 pb-5 flex flex-col items-center gap-2"
+        style={{
+          background: 'rgba(251, 240, 227, 0.80)', // #FBF0E3 with 80% opacity
+          backdropFilter: 'blur(8px)',
+          borderTop: '2px solid #E2BFA3',
+          boxShadow: '0 -2px 16px rgba(132,38,22,0.07)',
+          paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom))',
+        }}
       >
         {/* Dice display for players whose turn it isn't */}
         {started && dice && !isMyTurn && (
           <div className="flex gap-2 mb-2">
             {dice.map((die, i) => (
-              <Dice key={i} value={die} size={32} />
+              <Dice
+                key={i}
+                value={die}
+                size={32}
+                color="#DF4A2B"
+                border="#E2BFA3"
+              />
             ))}
           </div>
         )}
 
         {winner ? (
           <div className="flex flex-col items-center gap-2">
-            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+            <div className="text-2xl font-bold" style={{ color: '#16a34a' }}>
               {gameState.players[winner]?.name || winner} wins!
             </div>
             {/* Next game logic */}
             {gameState.nextGame ? (
               <a
                 href={`/game/${gameState.nextGame}`}
-                className="mt-2 px-6 py-2 rounded bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors text-lg"
+                className="mt-2 px-6 py-2 rounded font-bold text-lg transition-colors"
+                style={{
+                  background: '#E85E37',
+                  color: '#FBF0E3',
+                }}
+                onMouseOver={(e) =>
+                  (e.currentTarget.style.background = '#DF4A2B')
+                }
+                onMouseOut={(e) =>
+                  (e.currentTarget.style.background = '#E85E37')
+                }
               >
                 Play Again
               </a>
@@ -637,8 +828,16 @@ export function Board() {
           <div className="flex gap-2">
             <button
               onClick={() => sendIntent('rollDice')}
-              className="px-4 py-2 rounded bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors text-lg"
+              className="px-4 py-2 rounded font-bold text-lg transition-colors"
+              style={{
+                background: '#E85E37',
+                color: '#FBF0E3',
+              }}
               disabled={!isMyTurn || phase !== 'rolling'}
+              onMouseOver={(e) =>
+                (e.currentTarget.style.background = '#DF4A2B')
+              }
+              onMouseOut={(e) => (e.currentTarget.style.background = '#E85E37')}
             >
               Roll Dice
             </button>
@@ -646,8 +845,18 @@ export function Board() {
             {Object.keys(neutralPieces).length > 0 && (
               <button
                 onClick={() => sendIntent('hold')}
-                className="px-4 py-2 rounded bg-green-600 text-white font-bold hover:bg-green-700 transition-colors text-lg"
+                className="px-4 py-2 rounded font-bold text-lg transition-colors"
+                style={{
+                  background: '#842616',
+                  color: '#FBF0E3',
+                }}
                 disabled={!isMyTurn || phase !== 'rolling'}
+                onMouseOver={(e) =>
+                  (e.currentTarget.style.background = '#DF4A2B')
+                }
+                onMouseOut={(e) =>
+                  (e.currentTarget.style.background = '#842616')
+                }
               >
                 Hold
               </button>
@@ -679,10 +888,13 @@ export function Board() {
                   display: 'flex',
                   gap: 8,
                   padding: 8,
-                  border: '2px dashed #ccc',
-                  borderRadius: 8,
+                  border: '2px dashed #E85E37',
+                  background: 'rgba(251,240,227,0.85)',
+                  borderRadius: 12,
                   minHeight: 48,
                   alignItems: 'center',
+                  boxShadow: '0 2px 8px rgba(132,38,22,0.07)',
+                  transition: 'border 0.2s, background 0.2s',
                 }}
               >
                 {dice.map((die, i) => {
@@ -764,14 +976,16 @@ export function Board() {
                 style={{
                   width: 100,
                   height: 60,
-                  border: '2px dashed #2563eb',
-                  borderRadius: 10,
-                  background: '#f0f6ff',
+                  border: '2px dashed #E85E37',
+                  borderRadius: 12,
+                  background: 'rgba(251,240,227,0.85)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 8,
                   marginRight: 8,
+                  boxShadow: '0 2px 8px rgba(132,38,22,0.07)',
+                  transition: 'border 0.2s, background 0.2s',
                 }}
               >
                 {pair1.map((die, i) => (
@@ -796,7 +1010,7 @@ export function Board() {
                       width: 32,
                       height: 32,
                       background: '#fff',
-                      border: '2px solid #2563eb',
+                      border: '2px dashed #E85E37',
                       borderRadius: 8,
                       display: 'flex',
                       alignItems: 'center',
@@ -835,13 +1049,15 @@ export function Board() {
                 style={{
                   width: 100,
                   height: 60,
-                  border: '2px dashed #2563eb',
-                  borderRadius: 10,
-                  background: '#f0f6ff',
+                  border: '2px dashed #E85E37',
+                  borderRadius: 12,
+                  background: 'rgba(251,240,227,0.85)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 8,
+                  boxShadow: '0 2px 8px rgba(132,38,22,0.07)',
+                  transition: 'border 0.2s, background 0.2s',
                 }}
               >
                 {pair2.map((die, i) => (
@@ -866,7 +1082,7 @@ export function Board() {
                       width: 32,
                       height: 32,
                       background: '#fff',
-                      border: '2px solid #2563eb',
+                      border: '2px dashed #E85E37',
                       borderRadius: 8,
                       display: 'flex',
                       alignItems: 'center',
@@ -883,12 +1099,54 @@ export function Board() {
               </div>
             </div>
             <button
-              className="mt-4 px-6 py-2 rounded bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors text-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
+              className="mt-4 px-6 py-2 rounded font-bold text-lg transition-colors"
+              style={{
+                background:
+                  (pair1.length !== 2 && pair2.length !== 2) ||
+                  (pair1.length > 0 && pair1.length !== 2) ||
+                  (pair2.length > 0 && pair2.length !== 2)
+                    ? '#E2BFA3'
+                    : '#E85E37',
+                color:
+                  (pair1.length !== 2 && pair2.length !== 2) ||
+                  (pair1.length > 0 && pair1.length !== 2) ||
+                  (pair2.length > 0 && pair2.length !== 2)
+                    ? '#fff'
+                    : '#FBF0E3',
+                cursor:
+                  (pair1.length !== 2 && pair2.length !== 2) ||
+                  (pair1.length > 0 && pair1.length !== 2) ||
+                  (pair2.length > 0 && pair2.length !== 2)
+                    ? 'not-allowed'
+                    : 'pointer',
+              }}
               disabled={
                 (pair1.length !== 2 && pair2.length !== 2) ||
                 (pair1.length > 0 && pair1.length !== 2) ||
                 (pair2.length > 0 && pair2.length !== 2)
               }
+              onMouseOver={(e) => {
+                if (
+                  !(
+                    (pair1.length !== 2 && pair2.length !== 2) ||
+                    (pair1.length > 0 && pair1.length !== 2) ||
+                    (pair2.length > 0 && pair2.length !== 2)
+                  )
+                ) {
+                  e.currentTarget.style.background = '#DF4A2B';
+                }
+              }}
+              onMouseOut={(e) => {
+                if (
+                  !(
+                    (pair1.length !== 2 && pair2.length !== 2) ||
+                    (pair1.length > 0 && pair1.length !== 2) ||
+                    (pair2.length > 0 && pair2.length !== 2)
+                  )
+                ) {
+                  e.currentTarget.style.background = '#E85E37';
+                }
+              }}
               onClick={() => {
                 const pairsToSend: [
                   [number | null, number | null],
