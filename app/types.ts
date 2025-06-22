@@ -16,4 +16,12 @@ export interface GameState {
   winner?: string;
   message?: string; // Message to show to the current player
   nextGame?: string; // ID of the next game if created
+  chats: Array<{
+    id: string;
+    playerId: string;
+    name: string;
+    color: string;
+    message: string;
+    timestamp: number;
+  }>;
 }

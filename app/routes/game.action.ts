@@ -56,6 +56,13 @@ interface RemovePlayerAction {
     playerId: string;
   };
 }
+interface ChatAction {
+  intent: 'chat';
+  parameters: {
+    message: string;
+    timestamp: number;
+  };
+}
 type GameActionRequest =
   | RollDiceAction
   | HoldAction
@@ -64,7 +71,8 @@ type GameActionRequest =
   | UpdatePlayerInfoAction
   | QuitGameAction
   | AddPlayerAction
-  | RemovePlayerAction;
+  | RemovePlayerAction
+  | ChatAction;
 
 export async function action({ request, params }: ActionFunctionArgs) {
   if (request.method !== 'POST') {
@@ -137,6 +145,23 @@ export async function action({ request, params }: ActionFunctionArgs) {
     case 'removePlayer':
       newState = removePlayer(prevState, reqBody.parameters.playerId);
       break;
+    case 'chat': {
+      const player = prevState.players[playerSession.pid];
+      if (!player || typeof reqBody.parameters.message !== 'string') break;
+      const newChat = {
+        id: `${playerSession.pid}-${Date.now()}`,
+        playerId: playerSession.pid,
+        name: player.name,
+        color: player.color,
+        message: reqBody.parameters.message,
+        timestamp: reqBody.parameters.timestamp || Date.now(),
+      };
+      newState = {
+        ...prevState,
+        chats: [...(prevState.chats || []), newChat].slice(-100),
+      };
+      break;
+    }
     default:
       return new Response(JSON.stringify({ error: 'Unknown intent' }), {
         status: 400,

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouteLoaderData, useNavigate } from 'react-router';
 import './app.css';
 import type { GameState } from './types';
@@ -116,6 +116,10 @@ export function Board() {
   const [touchPosition, setTouchPosition] = useState({ x: 0, y: 0 });
   const [showBustPopup, setShowBustPopup] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showChat, setShowChat] = useState(false);
+  const chatInputRef = useRef<HTMLInputElement>(null);
+  const chatPanelRef = useRef<HTMLDivElement>(null);
+  const [chatScrollLocked, setChatScrollLocked] = useState(false);
 
   // SSE: Listen for board state updates
   useEffect(() => {
@@ -144,7 +148,8 @@ export function Board() {
       | 'updatePlayerInfo'
       | 'quitGame'
       | 'addPlayer'
-      | 'startNextGame',
+      | 'startNextGame'
+      | 'chat',
     parameters?: any,
   ) {
     const response = await fetch(`/game/${gameId}/action`, {
@@ -178,6 +183,32 @@ export function Board() {
     navigator.clipboard.writeText(gameUrl).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  // Scroll chat to bottom unless user scrolled up
+  useEffect(() => {
+    if (showChat && chatPanelRef.current && !chatScrollLocked) {
+      chatPanelRef.current.scrollTop = chatPanelRef.current.scrollHeight;
+    }
+  }, [showChat, gameState?.chats, chatScrollLocked]);
+
+  // Responsive check
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 700;
+
+  // Send chat message
+  async function sendChat(message: string) {
+    if (!gameId || !message.trim()) return;
+    await fetch(`/game/${gameId}/action`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        intent: 'chat',
+        parameters: {
+          message: message.trim(),
+          timestamp: Date.now(),
+        },
+      }),
     });
   }
 
@@ -559,15 +590,56 @@ export function Board() {
       </div>
 
       {/* Menu button */}
-      <div className="fixed top-4 left-4 z-40">
-        <Menu
-          onChangeColor={() => {
-            setShowColorPicker(true);
+      <div
+        className="fixed top-4 left-4 flex flex-col items-center"
+        style={{ zIndex: 40 }}
+      >
+        <div style={{ zIndex: 50 }}>
+          <Menu
+            onChangeColor={() => {
+              setShowColorPicker(true);
+            }}
+            onQuitGame={quitGame}
+            gameId={gameId}
+            players={players}
+          />
+        </div>
+        {/* Chat icon button */}
+        <button
+          onClick={() => setShowChat((v) => !v)}
+          aria-label="Open chat"
+          style={{
+            marginTop: 56, // ensure it's well below the menu button
+            width: 40,
+            height: 40,
+            borderRadius: 12,
+            background: '#FBF0E3',
+            border: '2px solid #E85E37',
+            color: '#842616',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 2px 8px rgba(132,38,22,0.10)',
+            cursor: 'pointer',
+            transition: 'background 0.2s, border 0.2s',
+            zIndex: 40,
+            position: 'relative',
           }}
-          onQuitGame={quitGame}
-          gameId={gameId}
-          players={players}
-        />
+        >
+          {/* Simple chat bubble SVG */}
+          <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#E85E37"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+        </button>
       </div>
 
       {/* Turn indicator (top right) */}
@@ -628,6 +700,214 @@ export function Board() {
           >
             BUST!
           </div>
+        </div>
+      )}
+
+      {/* Chat panel */}
+      {showChat && (
+        <div
+          className={
+            `fixed z-50 flex flex-col left-0 overflow-hidden ` +
+            `bg-[#FBF0E3] border-r-2 border-[#E85E37] shadow-[4px_0_24px_rgba(132,38,22,0.13)] transition-all duration-200 ` +
+            `w-full rounded-none ` +
+            `sm:w-[340px] sm:h-[calc(100vh-64px-88px)] sm:top-[64px] sm:bottom-auto sm:rounded-tr-[18px] sm:rounded-br-[18px]`
+          }
+          style={{
+            // Mobile: use dvh and safe-area-inset for height and padding
+            top: 'env(safe-area-inset-top, 0px)',
+            left: 'env(safe-area-inset-left, 0px)',
+            right: 'env(safe-area-inset-right, 0px)',
+            bottom: 'calc(env(safe-area-inset-bottom, 0px) + 88px)',
+            height:
+              'calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 88px)',
+            // Desktop overrides
+            ...(window.innerWidth >= 640
+              ? {
+                  top: 64,
+                  left: 0,
+                  right: 'auto',
+                  bottom: 'auto',
+                  height: 'calc(100vh - 64px - 88px)',
+                }
+              : {}),
+          }}
+        >
+          {/* Header */}
+          <div
+            style={{
+              padding:
+                'max(16px, env(safe-area-inset-top, 0px)) 16px 16px 16px',
+              borderBottom: '2px solid #E2BFA3',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: '#FBF0E3',
+              borderTopLeftRadius: 18,
+            }}
+          >
+            <span style={{ color: '#842616', fontWeight: 700, fontSize: 18 }}>
+              Chat
+            </span>
+            <button
+              onClick={() => setShowChat(false)}
+              aria-label="Close chat"
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#E85E37',
+                fontSize: 22,
+                cursor: 'pointer',
+                fontWeight: 700,
+                borderRadius: 8,
+                padding: 4,
+                transition: 'background 0.2s',
+              }}
+              onMouseOver={(e) =>
+                (e.currentTarget.style.background = '#F08B4C')
+              }
+              onMouseOut={(e) => (e.currentTarget.style.background = 'none')}
+            >
+              &times;
+            </button>
+          </div>
+          {/* Chat messages */}
+          <div
+            ref={chatPanelRef}
+            style={{
+              flex: 1,
+              overflowY: 'auto',
+              padding: 16,
+              background: '#FFF8F3',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 12,
+            }}
+            onScroll={(e) => {
+              const el = e.currentTarget;
+              setChatScrollLocked(
+                el.scrollHeight - el.scrollTop - el.clientHeight > 40,
+              );
+            }}
+          >
+            {(gameState.chats || []).map((chat, i) => (
+              <div
+                key={chat.id || i}
+                style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}
+              >
+                <span
+                  style={{
+                    display: 'inline-block',
+                    width: 18,
+                    height: 18,
+                    borderRadius: 8,
+                    background: chat.color,
+                    border: '2px solid #E2BFA3',
+                    marginBottom: 2,
+                  }}
+                />
+                <div
+                  style={{
+                    background: '#FBF0E3',
+                    borderRadius: 10,
+                    padding: '6px 12px',
+                    boxShadow: '0 1px 4px rgba(132,38,22,0.07)',
+                    flex: 1,
+                    maxWidth: '100%',
+                  }}
+                >
+                  <div
+                    style={{ color: '#842616', fontWeight: 700, fontSize: 13 }}
+                  >
+                    {chat.name}
+                  </div>
+                  <div
+                    style={{
+                      color: '#842616',
+                      fontSize: 15,
+                      wordBreak: 'break-word',
+                    }}
+                  >
+                    {chat.message}
+                  </div>
+                  <div style={{ color: '#B98A68', fontSize: 11, marginTop: 2 }}>
+                    {new Date(chat.timestamp).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          {/* Input */}
+          <form
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: 12,
+              borderTop: '2px solid #E2BFA3',
+              background: '#FBF0E3',
+              borderBottomRightRadius: 18,
+            }}
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const input = chatInputRef.current;
+              if (input && input.value.trim()) {
+                await sendChat(input.value);
+                input.value = '';
+                setTimeout(() => {
+                  if (chatPanelRef.current)
+                    chatPanelRef.current.scrollTop =
+                      chatPanelRef.current.scrollHeight;
+                }, 50);
+              }
+            }}
+          >
+            <input
+              ref={chatInputRef}
+              type="text"
+              placeholder="Type a message..."
+              maxLength={200}
+              style={{
+                flex: 1,
+                padding: '8px 12px',
+                borderRadius: 8,
+                border: '1px solid #E2BFA3',
+                background: '#FFF',
+                color: '#842616',
+                fontSize: 15,
+                marginRight: 8,
+              }}
+              autoComplete="off"
+              onFocus={() =>
+                setTimeout(() => {
+                  if (chatPanelRef.current && !chatScrollLocked)
+                    chatPanelRef.current.scrollTop =
+                      chatPanelRef.current.scrollHeight;
+                }, 50)
+              }
+            />
+            <button
+              type="submit"
+              style={{
+                background: '#E85E37',
+                color: '#FBF0E3',
+                border: 'none',
+                borderRadius: 8,
+                fontWeight: 700,
+                fontSize: 16,
+                padding: '8px 18px',
+                cursor: 'pointer',
+                transition: 'background 0.2s',
+              }}
+              onMouseOver={(e) =>
+                (e.currentTarget.style.background = '#DF4A2B')
+              }
+              onMouseOut={(e) => (e.currentTarget.style.background = '#E85E37')}
+            >
+              Send
+            </button>
+          </form>
         </div>
       )}
 
@@ -1166,7 +1446,9 @@ export function Board() {
             </button>
           </div>
         ) : (
-          <div className="text-gray-500 text-lg">Waiting for your turn...</div>
+          <div style={{ color: '#B98A68', fontSize: 18, fontWeight: 500 }}>
+            Waiting for your turn...
+          </div>
         )}
       </div>
     </div>
