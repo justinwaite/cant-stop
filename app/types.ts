@@ -25,3 +25,67 @@ export interface GameState {
     timestamp: number;
   }>;
 }
+
+// Type for the request body as a discriminated union
+interface RollDiceAction {
+  intent: 'rollDice';
+}
+interface HoldAction {
+  intent: 'hold';
+}
+interface StartGameAction {
+  intent: 'startGame';
+}
+interface ChoosePairsAction {
+  intent: 'choosePairs';
+  parameters: {
+    pairs: Array<[number, number]>;
+  };
+}
+interface UpdatePlayerInfoAction {
+  intent: 'updatePlayerInfo';
+  parameters: {
+    color: string;
+    name: string;
+  };
+}
+interface QuitGameAction {
+  intent: 'quitGame';
+}
+interface AddPlayerAction {
+  intent: 'addPlayer';
+  parameters: {
+    playerId: string;
+    color: string;
+    name: string;
+  };
+}
+interface RemovePlayerAction {
+  intent: 'removePlayer';
+  parameters: {
+    playerId: string;
+  };
+}
+interface ChatAction {
+  intent: 'chat';
+  parameters: {
+    message: string;
+    timestamp: number;
+  };
+}
+
+export type GameAction =
+  | RollDiceAction
+  | HoldAction
+  | StartGameAction
+  | ChoosePairsAction
+  | UpdatePlayerInfoAction
+  | QuitGameAction
+  | AddPlayerAction
+  | RemovePlayerAction
+  | ChatAction;
+
+export type GameActionResponse = {
+  bust: boolean;
+  state: GameState;
+};

@@ -48,7 +48,6 @@ export function ColorPicker({
   useEffect(() => {
     setName(initialName || getInitialName());
     setSelectedColor(initialColor || getInitialColor());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialName, initialColor]);
 
   const canSubmit =
@@ -75,7 +74,7 @@ export function ColorPicker({
         left: 0,
         width: '100vw',
         height: '100vh',
-        background: 'rgba(132,38,22,0.28)', // warm brown overlay
+        background: 'linear-gradient(180deg, #E85E37 0%, #F08B4C 100%)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',

@@ -1,34 +1,24 @@
 import { useState } from 'react';
 import { usePlayerSession } from '~/utils/use-player-session';
+import { IconButton } from './icon-button';
+import { useGameContext } from '~/utils/game-provider';
 
 interface MenuProps {
   onChangeColor: () => void;
-  onQuitGame: () => void;
-  gameId: string;
-  players: Record<string, { color: string; name: string }>;
 }
 
-export function Menu({
-  onChangeColor,
-  onQuitGame,
-  gameId,
-  players,
-}: MenuProps) {
+export function Menu({ onChangeColor }: MenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showPlayers, setShowPlayers] = useState(false);
   const { pid } = usePlayerSession();
+  const { act, gameId, gameState } = useGameContext();
 
   async function handleRemovePlayer(playerId: string) {
-    if (!gameId) return;
     if (!window.confirm('Remove this player from the game?')) return;
-    await fetch(`/game/${gameId}/action`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        intent: 'removePlayer',
-        parameters: { playerId },
-      }),
+    await act({
+      intent: 'removePlayer',
+      parameters: { playerId },
     });
   }
 
@@ -41,34 +31,25 @@ export function Menu({
     setIsOpen(false);
   }
 
-  function handleExitGame() {
+  async function handleExitGame() {
     if (!window.confirm('Are you sure you want to quit the game?')) return;
-    setIsOpen(false);
-    onQuitGame();
+    await act({ intent: 'quitGame' });
+    // Navigate to home after quitting
+    if (typeof window !== 'undefined') {
+      window.location.href = '/';
+    }
   }
 
   return (
     <>
       {/* Menu button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="fixed top-4 left-4 z-50 flex items-center justify-center w-10 h-10 p-2 cursor-pointer"
-        style={{
-          background: '#FBF0E3',
-          border: '2px solid #E85E37',
-          color: '#842616',
-          borderRadius: 12,
-          boxShadow: '0 2px 8px rgba(132,38,22,0.10)',
-          transition: 'background 0.2s, border 0.2s',
-        }}
-        aria-label="Menu"
-      >
+      <IconButton onClick={() => setIsOpen(!isOpen)} aria-label="Menu">
         <svg
           width="20"
           height="20"
           viewBox="0 0 24 24"
           fill="none"
-          stroke="#842616"
+          stroke="#E85E37"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -77,7 +58,7 @@ export function Menu({
           <line x1="3" y1="12" x2="21" y2="12" />
           <line x1="3" y1="18" x2="21" y2="18" />
         </svg>
-      </button>
+      </IconButton>
 
       {/* Menu dropdown */}
       {isOpen && (
@@ -90,11 +71,10 @@ export function Menu({
 
           {/* Menu content */}
           <div
-            className="fixed top-18 left-4 z-50 min-w-40 overflow-hidden"
+            className="fixed top-16 left-4 z-50 min-w-40 overflow-hidden rounded-xl"
             style={{
               background: 'rgba(251,240,227,0.97)',
-              border: '2px solid #E85E37',
-              borderRadius: 16,
+              border: '2px solid #E2BFA3',
               boxShadow: '0 4px 24px rgba(132,38,22,0.13)',
               color: '#842616',
               fontWeight: 500,
@@ -119,7 +99,7 @@ export function Menu({
                 height="16"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="#842616"
+                stroke="#E85E37"
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -151,7 +131,7 @@ export function Menu({
                 height="16"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="#842616"
+                stroke="#E85E37"
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -182,7 +162,7 @@ export function Menu({
                 height="16"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="#842616"
+                stroke="#E85E37"
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -214,7 +194,7 @@ export function Menu({
                 height="16"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="#842616"
+                stroke="#E85E37"
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -257,7 +237,7 @@ export function Menu({
               Players
             </div>
             <ul className="w-full">
-              {Object.entries(players).length === 0 && (
+              {Object.entries(gameState.players).length === 0 && (
                 <li
                   style={{
                     color: '#B98A68',
@@ -268,7 +248,7 @@ export function Menu({
                   No players yet
                 </li>
               )}
-              {Object.entries(players).map(([playerId, player]) => {
+              {Object.entries(gameState.players).map(([playerId, player]) => {
                 const isCurrent = playerId === pid;
                 return (
                   <li

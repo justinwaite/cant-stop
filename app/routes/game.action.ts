@@ -5,7 +5,7 @@ import {
 } from '~/utils/board-state.server';
 import { getPlayerSession } from '~/utils/session.server';
 import { isValidGameCode } from '~/utils/game-code';
-import type { GameState } from '~/types';
+import type { GameAction, GameState } from '~/types';
 import {
   rollDice,
   choosePairs,
@@ -15,64 +15,6 @@ import {
   addPlayer,
   removePlayer,
 } from '~/utils/game-engine.server';
-
-// Type for the request body as a discriminated union
-interface RollDiceAction {
-  intent: 'rollDice';
-}
-interface HoldAction {
-  intent: 'hold';
-}
-interface StartGameAction {
-  intent: 'startGame';
-}
-interface ChoosePairsAction {
-  intent: 'choosePairs';
-  parameters: {
-    pairs: [[number, number], [number, number]];
-  };
-}
-interface UpdatePlayerInfoAction {
-  intent: 'updatePlayerInfo';
-  parameters: {
-    color: string;
-    name: string;
-  };
-}
-interface QuitGameAction {
-  intent: 'quitGame';
-}
-interface AddPlayerAction {
-  intent: 'addPlayer';
-  parameters: {
-    playerId: string;
-    color: string;
-    name: string;
-  };
-}
-interface RemovePlayerAction {
-  intent: 'removePlayer';
-  parameters: {
-    playerId: string;
-  };
-}
-interface ChatAction {
-  intent: 'chat';
-  parameters: {
-    message: string;
-    timestamp: number;
-  };
-}
-type GameActionRequest =
-  | RollDiceAction
-  | HoldAction
-  | StartGameAction
-  | ChoosePairsAction
-  | UpdatePlayerInfoAction
-  | QuitGameAction
-  | AddPlayerAction
-  | RemovePlayerAction
-  | ChatAction;
 
 export async function action({ request, params }: ActionFunctionArgs) {
   if (request.method !== 'POST') {
@@ -99,7 +41,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
     });
   }
 
-  const reqBody = (await request.json()) as GameActionRequest;
+  const reqBody = (await request.json()) as GameAction;
   const prevState = await readBoardState(gameId);
   let newState: GameState = prevState;
   let bust = false;

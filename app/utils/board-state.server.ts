@@ -26,6 +26,7 @@ export async function readBoardState(gameId: string): Promise<GameState> {
       dice: null,
       neutralPieces: {},
       winner: undefined,
+      chats: [],
     };
   }
 }

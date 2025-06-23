@@ -1,7 +1,8 @@
 // Server-side game engine for Peak Pursuit
-import type { GameState, GamePhase } from '~/types';
+import type { GameState } from '~/types';
 import { generateGameCode } from '~/utils/game-code';
 import crypto from 'node:crypto';
+import { columnSlotCounts } from './constants';
 
 // Utility to get the current player's ID
 function getCurrentPlayerId(state: GameState): string {
@@ -127,7 +128,7 @@ function isValidPair(state: GameState, pair: [number, number]): boolean {
 export function choosePairs(
   state: GameState,
   playerId: string,
-  pairs: [[number | null, number | null], [number | null, number | null]],
+  pairs: Array<[number, number]>,
 ): GameState {
   if (getCurrentPlayerId(state) !== playerId || state.phase !== 'pairing') {
     return state;
@@ -137,15 +138,12 @@ export function choosePairs(
   if (!dice) return state;
 
   // Filter out pairs that are not fully filled
-  const validPairs = pairs.filter(
-    (pair) => pair[0] !== null && pair[1] !== null,
-  ) as [number, number][];
-  if (validPairs.length === 0) return state;
+  if (pairs.length === 0) return state;
 
   // Check if player is only submitting one pair
-  if (validPairs.length === 1) {
+  if (pairs.length === 1) {
     // Find the remaining dice that weren't used
-    const usedDice = validPairs[0];
+    const usedDice = pairs[0];
     const diceCopy = [...dice];
 
     // Remove the used dice from the copy
@@ -220,8 +218,8 @@ export function choosePairs(
     }
   }
 
-  const allDice = validPairs.flat();
-  if (allDice.length !== validPairs.length * 2) return state;
+  const allDice = pairs.flat();
+  if (allDice.length !== pairs.length * 2) return state;
   const diceCopy = [...dice];
   for (const d of allDice) {
     const idx = diceCopy.indexOf(d);
@@ -231,7 +229,7 @@ export function choosePairs(
   if (diceCopy.length !== 4 - allDice.length) return state;
 
   let newNeutralPieces = { ...state.neutralPieces };
-  for (const pair of validPairs) {
+  for (const pair of pairs) {
     const sum = sumPair(pair);
     if (newNeutralPieces[sum] !== undefined) {
       // Check if advancing this piece would go out of bounds
@@ -289,20 +287,7 @@ export function choosePairs(
 // Helper: Get the top slot for a column (Peak Pursuit columns are 2-12)
 function getTopSlotForColumn(col: number): number {
   // Standard Peak Pursuit board: columns 2-12, with varying heights
-  const columnHeights: Record<number, number> = {
-    2: 3,
-    3: 5,
-    4: 7,
-    5: 9,
-    6: 11,
-    7: 13,
-    8: 11,
-    9: 9,
-    10: 7,
-    11: 5,
-    12: 3,
-  };
-  return columnHeights[col] ?? 0;
+  return columnSlotCounts[col as keyof typeof columnSlotCounts] ?? -1;
 }
 
 export function hold(state: GameState, playerId: string): GameState {
