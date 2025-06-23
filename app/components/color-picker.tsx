@@ -14,6 +14,7 @@ const playerColors = [
   '#9333ea', // purple
 ];
 
+import clsx from 'clsx';
 import { useState, useEffect } from 'react';
 
 export function ColorPicker({
@@ -26,17 +27,11 @@ export function ColorPicker({
   // Try to load from localStorage if not provided
   const getInitialName = () => {
     if (initialName) return initialName;
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('peakpursuit_name') || '';
-    }
     return '';
   };
   const getInitialColor = () => {
     if (initialColor) return initialColor;
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('peakpursuit_color') || null;
-    }
-    return null;
+    return '';
   };
 
   const [name, setName] = useState(getInitialName());
@@ -57,11 +52,6 @@ export function ColorPicker({
 
   function handleSubmit() {
     if (canSubmit && selectedColor) {
-      // Save to localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('peakpursuit_name', name.trim());
-        localStorage.setItem('peakpursuit_color', selectedColor);
-      }
       onSelect(selectedColor, name.trim());
     }
   }
@@ -201,24 +191,11 @@ export function ColorPicker({
         <button
           onClick={handleSubmit}
           disabled={!canSubmit}
-          style={{
-            fontSize: 16,
-            padding: '8px 24px',
-            borderRadius: 8,
-            border: 'none',
-            background: canSubmit ? '#E85E37' : '#F5E4D5',
-            color: canSubmit ? '#FBF0E3' : '#B98A68',
-            fontWeight: 'bold',
-            cursor: canSubmit ? 'pointer' : 'not-allowed',
-            marginTop: 8,
-            transition: 'background 0.2s',
-          }}
-          onMouseOver={(e) => {
-            if (canSubmit) e.currentTarget.style.background = '#DF4A2B';
-          }}
-          onMouseOut={(e) => {
-            if (canSubmit) e.currentTarget.style.background = '#E85E37';
-          }}
+          className={clsx(
+            'text-base py-2 px-6 rounded-lg border-0 font-bold mt-2 transition-colors duration-200',
+            'bg-[#E85E37] text-[#FBF0E3] cursor-pointer disabled:bg-[#F5E4D5] disabled:text-[#B98A68] disabled:cursor-not-allowed',
+            'hover:bg-[#DF4A2B]',
+          )}
         >
           {isEditing ? 'Update' : 'Join Game'}
         </button>

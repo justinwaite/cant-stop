@@ -37,7 +37,7 @@ export default function GameRoute({
 }
 
 function Game() {
-  const { pid } = usePlayerSession();
+  const { pid, previousName, previousColor } = usePlayerSession();
   const { gameState, act, showBustPopup } = useGameContext();
 
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -52,6 +52,8 @@ function Game() {
   if (!playerColor) {
     return (
       <ColorPicker
+        initialName={previousName || undefined}
+        initialColor={previousColor || undefined}
         onSelect={(color, name) => {
           act({
             intent: 'addPlayer',
